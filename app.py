@@ -87,7 +87,7 @@ if lote_escolhido != "(Novo Lote)":
         ):
             registro = item
             break
-, {}
+
 )
 
 # Título e botão gravar
