@@ -131,6 +131,8 @@ if st.button("💾 Gravar alterações"):
     if lote_escolhido == "(Novo Lote)":
         worksheet.append_row(valores_para_inserir)
         st.success("✔️ Novo lote adicionado com sucesso!")
+        worksheet = sheet.worksheet("NOVAUCP")
+        data = worksheet.get_all_records()
         st.rerun()
     else:
         # Atualizar lote existente
