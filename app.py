@@ -76,17 +76,18 @@ lotes_opcoes = ["(Novo Lote)"] + sorted(lotes_existentes)
 lote_escolhido = st.selectbox("📦 Escolha um lote:", lotes_opcoes)
 
 # Determina o registro atual
+
 registro = {}
 if lote_escolhido != "(Novo Lote)":
-    registro = next(
-        (
-            item for item in data
-            if str(item.get("Produto")) == produto_escolhido
-            and str(item.get("ARMAZEM")) == armazem_escolhido
-            and str(item.get("LOTE")) == lote_escolhido
-        ),
-        {}
-    ), {}
+    for item in data:
+        if (
+            str(item.get("Produto")) == produto_escolhido and
+            str(item.get("ARMAZEM")) == armazem_escolhido and
+            str(item.get("LOTE")) == lote_escolhido
+        ):
+            registro = item
+            break
+, {}
 )
 
 # Título e botão gravar
