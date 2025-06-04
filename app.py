@@ -56,22 +56,23 @@ sheet = client.open_by_url(
 worksheet = sheet.worksheet("NOVAUCP")
 data = worksheet.get_all_records()
 
-
 # Produto e armazém
 produtos = list(set(item["Produto"] for item in data))
 produto_escolhido = st.selectbox("🧊 Escolha um produto:", produtos)
 
 armazens = list(
-    set(item["ARMAZEM"] for item in data if item["Produto"] == produto_escolhido)
-)
+    set(item["ARMAZEM"] for item in data
+        if item["Produto"] == produto_escolhido))
 armazem_escolhido = st.selectbox("🏢 Escolha um armazém:", armazens)
 
 # Registros filtrados
 registros_produto = [
-    item for item in data if item["Produto"] == produto_escolhido and item["ARMAZEM"] == armazem_escolhido
+    item for item in data if item["Produto"] == produto_escolhido
+    and item["ARMAZEM"] == armazem_escolhido
 ]
 
-lotes_existentes = list(set(str(item["LOTE"]) for item in registros_produto if item.get("LOTE")))
+lotes_existentes = list(
+    set(str(item["LOTE"]) for item in registros_produto if item.get("LOTE")))
 lotes_opcoes = ["(Novo Lote)"] + sorted(lotes_existentes)
 lote_escolhido = st.selectbox("📦 Escolha um lote:", lotes_opcoes)
 
@@ -80,18 +81,15 @@ lote_escolhido = st.selectbox("📦 Escolha um lote:", lotes_opcoes)
 registro = {}
 if lote_escolhido != "(Novo Lote)":
     for item in data:
-        if (
-            str(item.get("Produto")) == produto_escolhido and
-            str(item.get("ARMAZEM")) == armazem_escolhido and
-            str(item.get("LOTE")) == lote_escolhido
-        ):
+        if (str(item.get("Produto")) == produto_escolhido
+                and str(item.get("ARMAZEM")) == armazem_escolhido
+                and str(item.get("LOTE")) == lote_escolhido):
             registro = item
             break
-, {}
-)
 
 # Título e botão gravar
-st.markdown('<div class="titulo">📋 Painel de Produção - NOVAUCP</div>', unsafe_allow_html=True)
+st.markdown('<div class="titulo">📋 Painel de Produção - NOVAUCP</div>',
+            unsafe_allow_html=True)
 
 if st.button("💾 Gravar alterações"):
     # Recolhe valores preenchidos
@@ -108,8 +106,10 @@ if st.button("💾 Gravar alterações"):
     dias_semana = ["SEGUNDA", "TERCA", "QUARTA", "QUINTA", "SEXTA"]
     campos_dias = {}
     for dia in dias_semana:
-        campos_dias[f"{dia} - INÍCIO"] = st.session_state.get(f"{dia}_inicio", "")
-        campos_dias[f"{dia} - ENTRADA"] = st.session_state.get(f"{dia}_entrada", "")
+        campos_dias[f"{dia} - INÍCIO"] = st.session_state.get(
+            f"{dia}_inicio", "")
+        campos_dias[f"{dia} - ENTRADA"] = st.session_state.get(
+            f"{dia}_entrada", "")
         campos_dias[f"{dia} - FIM"] = st.session_state.get(f"{dia}_fim", "")
 
     # Preparar nova linha
@@ -147,7 +147,6 @@ if st.button("💾 Gravar alterações"):
             st.experimental_rerun()
         else:
             st.error("❌ Lote não encontrado para atualização.")
-
 
 # Bloco de dados do lote
 st.markdown('<div class="bloco">', unsafe_allow_html=True)
