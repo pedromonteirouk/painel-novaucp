@@ -56,19 +56,19 @@ sheet = client.open_by_url(
 worksheet = sheet.worksheet("NOVAUCP")
 data = worksheet.get_all_records()
 
+
 # Produto e armazém
 produtos = list(set(item["Produto"] for item in data))
 produto_escolhido = st.selectbox("🧊 Escolha um produto:", produtos)
 
 armazens = list(
-    set(item["ARMAZEM"] for item in data
-        if item["Produto"] == produto_escolhido))
+    set(item["ARMAZEM"] for item in data if item["Produto"] == produto_escolhido)
+)
 armazem_escolhido = st.selectbox("🏢 Escolha um armazém:", armazens)
 
 # Registros filtrados
 registros_produto = [
-    item for item in data if item["Produto"] == produto_escolhido
-    and item["ARMAZEM"] == armazem_escolhido
+    item for item in data if item["Produto"] == produto_escolhido and item["ARMAZEM"] == armazem_escolhido
 ]
 
 lotes_existentes = list(set(item["LOTE"] for item in registros_produto))
@@ -77,12 +77,67 @@ lote_escolhido = st.selectbox("📦 Escolha um lote:", lotes_opcoes)
 
 # Determina o registro atual
 registro = {} if lote_escolhido == "(Novo Lote)" else next(
-    (item for item in registros_produto if item["LOTE"] == lote_escolhido), {})
+    (item for item in registros_produto if item["LOTE"] == lote_escolhido), {}
+)
 
 # Título e botão gravar
-st.markdown('<div class="titulo">📋 Painel de Produção - NOVAUCP</div>',
-            unsafe_allow_html=True)
-st.button("💾 Gravar alterações")
+st.markdown('<div class="titulo">📋 Painel de Produção - NOVAUCP</div>', unsafe_allow_html=True)
+
+if st.button("💾 Gravar alterações"):
+    # Recolhe valores preenchidos
+    lote_digitado = st.session_state.get("lote_input", "")
+    stock_digitado = st.session_state.get("stock_input", "")
+    dt_prod_digitado = st.session_state.get("dt_prod_input", date.today())
+    dt_val_digitado = st.session_state.get("dt_val_input", date.today())
+
+    # Formatar datas
+    dt_prod_str = dt_prod_digitado.strftime("%d-%m-%y")
+    dt_val_str = dt_val_digitado.strftime("%d-%m-%y")
+
+    # Recolher horários por dia
+    dias_semana = ["SEGUNDA", "TERCA", "QUARTA", "QUINTA", "SEXTA"]
+    campos_dias = {}
+    for dia in dias_semana:
+        campos_dias[f"{dia} - INÍCIO"] = st.session_state.get(f"{dia}_inicio", "")
+        campos_dias[f"{dia} - ENTRADA"] = st.session_state.get(f"{dia}_entrada", "")
+        campos_dias[f"{dia} - FIM"] = st.session_state.get(f"{dia}_fim", "")
+
+    # Preparar nova linha
+    nova_linha = {
+        "Produto": produto_escolhido,
+        "ARMAZEM": armazem_escolhido,
+        "STOCK": stock_digitado,
+        "LOTE": lote_digitado,
+        "DT PRODUÇÃO": dt_prod_str,
+        "DT VALIDADE": dt_val_str
+    }
+    nova_linha.update(campos_dias)
+
+    # Obter todas as colunas na ordem correta
+    todas_colunas = worksheet.row_values(1)
+    valores_para_inserir = [nova_linha.get(col, "") for col in todas_colunas]
+
+    # Se for novo lote, adicionar
+    if lote_escolhido == "(Novo Lote)":
+        worksheet.append_row(valores_para_inserir)
+        st.success("✔️ Novo lote adicionado com sucesso!")
+        st.experimental_rerun()
+    else:
+        # Atualizar lote existente
+        todas_linhas = worksheet.get_all_values()
+        idx_lote = todas_colunas.index("LOTE")
+        row_to_update = None
+        for i, linha in enumerate(todas_linhas, start=2):  # pular cabeçalho
+            if linha[idx_lote] == lote_escolhido:
+                row_to_update = i
+                break
+        if row_to_update:
+            worksheet.update(f"A{row_to_update}", [valores_para_inserir])
+            st.success("✔️ Lote atualizado com sucesso!")
+            st.experimental_rerun()
+        else:
+            st.error("❌ Lote não encontrado para atualização.")
+
 
 # Bloco de dados do lote
 st.markdown('<div class="bloco">', unsafe_allow_html=True)
