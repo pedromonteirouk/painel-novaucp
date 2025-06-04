@@ -71,7 +71,7 @@ registros_produto = [
     item for item in data if item["Produto"] == produto_escolhido and item["ARMAZEM"] == armazem_escolhido
 ]
 
-lotes_existentes = list(set(item["LOTE"] for item in registros_produto))
+lotes_existentes = list(set(str(item["LOTE"]) for item in registros_produto if item.get("LOTE")))
 lotes_opcoes = ["(Novo Lote)"] + sorted(lotes_existentes)
 lote_escolhido = st.selectbox("📦 Escolha um lote:", lotes_opcoes)
 
