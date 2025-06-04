@@ -59,31 +59,30 @@ data = worksheet.get_all_records()
 # Produto e armazém
 produtos = list(set(item["Produto"] for item in data))
 produto_escolhido = st.selectbox("🧊 Escolha um produto:", produtos)
+
 armazens = list(
     set(item["ARMAZEM"] for item in data
         if item["Produto"] == produto_escolhido))
 armazem_escolhido = st.selectbox("🏢 Escolha um armazém:", armazens)
 
-# Filtrar registros
+# Registros filtrados
 registros_produto = [
     item for item in data if item["Produto"] == produto_escolhido
     and item["ARMAZEM"] == armazem_escolhido
 ]
-lotes = list(set(item["LOTE"] for item in registros_produto))
-lote_escolhido = st.selectbox("📦 Escolha um lote:", lotes)
 
-registro = next(
+lotes_existentes = list(set(item["LOTE"] for item in registros_produto))
+lotes_opcoes = ["(Novo Lote)"] + sorted(lotes_existentes)
+lote_escolhido = st.selectbox("📦 Escolha um lote:", lotes_opcoes)
+
+# Determina o registro atual
+registro = {} if lote_escolhido == "(Novo Lote)" else next(
     (item for item in registros_produto if item["LOTE"] == lote_escolhido), {})
 
-# Botão novo lote
-if st.button("➕ Novo Lote"):
-    nova_linha = {"Produto": produto_escolhido, "ARMAZEM": armazem_escolhido}
-    worksheet.append_row(
-        [nova_linha.get(col, "") for col in worksheet.row_values(1)])
-    st.rerun()
-
+# Título e botão gravar
 st.markdown('<div class="titulo">📋 Painel de Produção - NOVAUCP</div>',
             unsafe_allow_html=True)
+st.button("💾 Gravar alterações")
 
 # Bloco de dados do lote
 st.markdown('<div class="bloco">', unsafe_allow_html=True)
@@ -134,6 +133,3 @@ for dia in dias_semana:
                     value=str(registro.get(f"{dia} - FIM", "")),
                     key=f"{dia}_fim")
     st.markdown('</div>', unsafe_allow_html=True)
-
-# Botão Gravar (futuramente para update)
-st.button("💾 Gravar alterações")
