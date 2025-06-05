@@ -56,10 +56,6 @@ sheet = client.open_by_url(
 worksheet = sheet.worksheet("NOVAUCP")
 data_raw = worksheet.get_all_values()
 st.write(data_raw)
-# Data
-data_semana = st.text_input("🗓️ Data / Semana",
-                            value=registro.get("Data / Semana", ""),
-                            key="semana_input")
 
 # Produto e armazém
 produtos = sorted(
@@ -92,6 +88,10 @@ if lote_escolhido != "(Novo Lote)":
                 and str(item.get("LOTE")) == lote_escolhido):
             registro = item
             break
+
+data_semana = st.text_input("🗓️ Data / Semana",
+                            value=registro.get("Data / Semana", ""),
+                            key="semana_input")
 
 # Título e botão gravar
 st.markdown('<div class="titulo">📋 Painel de Produção - NOVAUCP</div>',
