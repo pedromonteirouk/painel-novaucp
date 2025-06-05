@@ -147,7 +147,8 @@ if st.button("💾 Gravar alterações"):
         if row_to_update:
             worksheet.update(f"A{row_to_update}", [valores_para_inserir])
             st.success("✔️ Lote atualizado com sucesso!")
-            st.experimental_rerun()
+            st.rerun()
+
         else:
             st.error("❌ Lote não encontrado para atualização.")
 
