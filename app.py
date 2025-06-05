@@ -213,7 +213,7 @@ for dia in dias_semana:
                 unsafe_allow_html=True)
     col1, col2, col3 = st.columns(3)
     col1.text_input(f"{dia} - INÍCIO",
-                    value=str(registro.get(f"{dia} - INICIO", "")),
+                    value=str(registro.get(f"{dia} - INÍCIO", "")),
                     key=f"{dia}_inicio")
     col2.text_input(f"{dia} - ENTRADA",
                     value=str(registro.get(f"{dia} - ENTRADA", "")),
