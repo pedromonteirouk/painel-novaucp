@@ -83,10 +83,10 @@ lote_escolhido = st.selectbox("📦 Escolha um lote:", lotes_opcoes)
 
 registro = {}
 if lote_escolhido != "(Novo Lote)":
-    for item in data:
-        if (str(item.get("Produto")) == produto_escolhido
-                and str(item.get("ARMAZEM")) == armazem_escolhido
-                and str(item.get("LOTE")) == lote_escolhido):
+    for item in reversed(data):  # percorre do fim para o início
+        if (str(item.get("Produto")).strip() == produto_escolhido
+                and str(item.get("ARMAZEM")).strip() == armazem_escolhido
+                and str(item.get("LOTE")).strip() == lote_escolhido):
             registro = item
             break
 
