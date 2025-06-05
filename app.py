@@ -55,6 +55,10 @@ sheet = client.open_by_url(
 )
 worksheet = sheet.worksheet("NOVAUCP")
 data = worksheet.get_all_records()
+# Data
+data_semana = st.text_input("🗓️ Data / Semana",
+                            value=registro.get("Data / Semana", ""),
+                            key="semana_input")
 
 # Produto e armazém
 produtos = sorted(
@@ -122,7 +126,8 @@ if st.button("💾 Gravar alterações"):
         "STOCK": stock_digitado,
         "LOTE": lote_digitado,
         "DT PRODUÇÃO": dt_prod_str,
-        "DT VALIDADE": dt_val_str
+        "DT VALIDADE": dt_val_str,
+        "Data / Semana": data_semana
     }
     nova_linha.update(campos_dias)
 
