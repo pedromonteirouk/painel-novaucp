@@ -58,8 +58,6 @@ rows = worksheet.get_all_values()
 headers = rows[0]
 data = [dict(zip(headers, row)) for row in rows[1:]]
 
-st.write(data_raw)
-
 # Produto e armazém
 produtos = sorted(
     set(str(item["Produto"]).strip() for item in data if item.get("Produto")))
