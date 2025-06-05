@@ -54,7 +54,8 @@ sheet = client.open_by_url(
     "https://docs.google.com/spreadsheets/d/1-J2mqcgSaq3-2CFVwXHzOvUGvKdYr31v7UT8da3r_OU/edit"
 )
 worksheet = sheet.worksheet("NOVAUCP")
-data = worksheet.get_all_records()
+data_raw = worksheet.get_all_values()
+st.write(data_raw)
 # Data
 data_semana = st.text_input("🗓️ Data / Semana",
                             value=registro.get("Data / Semana", ""),
