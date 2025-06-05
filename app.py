@@ -104,7 +104,9 @@ if st.button("💾 Gravar alterações"):
     dt_val_str = dt_val_digitado.strftime("%d-%m-%y")
 
     # Recolher horários por dia
-    dias_semana = ["SEGUNDA", "TERCA", "QUARTA", "QUINTA", "SEXTA"]
+    dias_semana = [
+        "SEGUNDA", "TERCA", "QUARTA", "QUINTA", "SEXTA", "SABADO", "DOMINGO"
+    ]
     campos_dias = {}
     for dia in dias_semana:
         campos_dias[f"{dia} - INÍCIO"] = st.session_state.get(
