@@ -90,14 +90,19 @@ if lote_escolhido != "(Novo Lote)":
             registro = item
             break
 
+try:
+    valor_ac3 = worksheet.acell("AC3").value or ""
+except:
+    valor_ac3 = ""
+
 data_semana = st.text_input("🗓️ Data / Semana",
-                            value=worksheet.acell("AC3").value,
+                            value=valor_ac3,
                             key="semana_input")
 
 if st.button("💾 Atualizar Data / Semana"):
     worksheet.update_acell("AC3", data_semana)
     st.success("✔️ Data / Semana atualizada!")
-    st.experimental_rerun()
+    st.rerun()
 
 # Título e botão gravar
 st.markdown('<div class="titulo">📋 Painel de Produção - NOVAUCP</div>',
