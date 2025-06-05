@@ -4,7 +4,7 @@ from datetime import datetime, date
 from oauth2client.service_account import ServiceAccountCredentials
 
 # Configuração da página
-st.set_page_config(page_title="Painel de Produção - NOVAUCP", layout="wide")
+st.set_page_config(page_title="Painel de Produção - UCP", layout="wide")
 
 # Estilo embutido
 st.markdown("""
