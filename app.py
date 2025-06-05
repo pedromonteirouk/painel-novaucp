@@ -54,7 +54,10 @@ sheet = client.open_by_url(
     "https://docs.google.com/spreadsheets/d/1-J2mqcgSaq3-2CFVwXHzOvUGvKdYr31v7UT8da3r_OU/edit"
 )
 worksheet = sheet.worksheet("NOVAUCP")
-data_raw = worksheet.get_all_values()
+rows = worksheet.get_all_values()
+headers = rows[0]
+data = [dict(zip(headers, row)) for row in rows[1:]]
+
 st.write(data_raw)
 
 # Produto e armazém
