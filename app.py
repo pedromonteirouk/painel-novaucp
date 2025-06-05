@@ -57,7 +57,8 @@ worksheet = sheet.worksheet("NOVAUCP")
 data = worksheet.get_all_records()
 
 # Produto e armazém
-produtos = list(set(item["Produto"] for item in data))
+produtos = sorted(
+    set(str(item["Produto"]).strip() for item in data if item.get("Produto")))
 produto_escolhido = st.selectbox("🧊 Escolha um produto:", produtos)
 
 armazens = list(
