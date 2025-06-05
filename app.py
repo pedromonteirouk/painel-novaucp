@@ -184,7 +184,9 @@ dt_val = col4.date_input("Data de Validade", value=dt_val, key="dt_val_input")
 st.markdown('</div>', unsafe_allow_html=True)
 
 # Bloco dos dias da semana
-dias_semana = ["SEGUNDA", "TERCA", "QUARTA", "QUINTA", "SEXTA"]
+dias_semana = [
+    "SEGUNDA", "TERCA", "QUARTA", "QUINTA", "SEXTA", "SABADO", "DOMINGO"
+]
 for dia in dias_semana:
     st.markdown(f'<div class="bloco"><div class="cabecalho">{dia}</div>',
                 unsafe_allow_html=True)
