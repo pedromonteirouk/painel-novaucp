@@ -105,7 +105,7 @@ if st.button("💾 Atualizar Data / Semana"):
     st.rerun()
 
 # Título e botão gravar
-st.markdown('<div class="titulo">📋 Painel de Produção - NOVAUCP</div>',
+st.markdown('<div class="titulo">📋 Painel de Produção - UCP</div>',
             unsafe_allow_html=True)
 
 if st.button("💾 Gravar alterações"):
