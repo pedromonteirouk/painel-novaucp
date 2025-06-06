@@ -19,18 +19,17 @@ if not st.session_state.acesso_autorizado:
     pin = st.text_input("Introduz o código de acesso:", type="password")
 
 if st.button("Entrar"):
-                if pin == PIN_CORRETO:
-                    st.session_state.acesso_autorizado = True
-                    if "Introduz o código de acesso:" in st.session_state:
-                        del st.session_state["Introduz o código de acesso:"]
-                    st.query_params["autorizado"] = "1"
-                    st.success("✅ Acesso concedido. A carregar...")
-                    st.stop()
-                elif pin != "":
-                    st.error("❌ Código incorreto. Tenta novamente.")
+    if pin == PIN_CORRETO:
+        st.session_state.acesso_autorizado = True
+        if "Introduz o código de acesso:" in st.session_state:
+            del st.session_state["Introduz o código de acesso:"]
+        st.query_params["autorizado"] = "1"
+        st.success("✅ Acesso concedido. A carregar...")
+        st.stop()
+    elif pin != "":
+        st.error("❌ Código incorreto. Tenta novamente.")
 
-
-    st.stop()  # evita mostrar o resto da app
+st.stop()  # evita mostrar o resto da app
 
 # Configuração da página
 st.set_page_config(page_title="Painel de Produção - UCP", layout="wide")
