@@ -14,10 +14,12 @@ if not st.session_state.acesso_autorizado:
     pin = st.text_input("Introduz o código de acesso:", type="password")
 
     if st.button("Entrar"):
-        if pin == PIN_CORRETO:
-            st.session_state.acesso_autorizado = True
-            st.query_params["autorizado"] = "1"
-            st.rerun()
+            if pin == PIN_CORRETO:
+                st.session_state.acesso_autorizado = True
+                del st.session_state["Introduz o código de acesso:"]
+                st.query_params["autorizado"] = "1"
+                st.success("✅ Acesso concedido. A carregar...")
+                st.stop()
         else:
             st.error("❌ Código incorreto. Tenta novamente.")
 
