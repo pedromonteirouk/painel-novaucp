@@ -3,33 +3,28 @@ import gspread
 from datetime import datetime, date
 from oauth2client.service_account import ServiceAccountCredentials
 
+import streamlit as st
+
+# Definir o código PIN
 PIN_CORRETO = "9472"
 
-# Inicializar estado
+# Verificar se já tem acesso
 if "acesso_autorizado" not in st.session_state:
     st.session_state.acesso_autorizado = False
 
-# Verifica query param
-params = st.query_params
-if params.get("autorizado") == "1":
-    st.session_state.acesso_autorizado = True
-
 if not st.session_state.acesso_autorizado:
-    st.title("🔐 Acesso Restrito")
+    st.markdown("### 🔒 Acesso restrito")
     pin = st.text_input("Introduz o código de acesso:", type="password")
 
-if st.button("Entrar"):
-    if pin == PIN_CORRETO:
-        st.session_state.acesso_autorizado = True
-        if "Introduz o código de acesso:" in st.session_state:
-            del st.session_state["Introduz o código de acesso:"]
-        st.query_params["autorizado"] = "1"
-        st.success("✅ Acesso concedido. A carregar...")
-        st.stop()
-    elif pin != "":
-        st.error("❌ Código incorreto. Tenta novamente.")
-
-st.stop()  # evita mostrar o resto da app
+    if st.button("Entrar"):
+        if pin == PIN_CORRETO:
+            st.session_state.acesso_autorizado = True
+            if "Introduz o código de acesso:" in st.session_state:
+                del st.session_state["Introduz o código de acesso:"]
+            st.rerun()
+        else:
+            st.error("❌ Código incorreto. Tenta novamente.")
+    st.stop()  # Impede carregamento do resto da app até o acesso ser concedido
 
 # Configuração da página
 st.set_page_config(page_title="Painel de Produção - UCP", layout="wide")
