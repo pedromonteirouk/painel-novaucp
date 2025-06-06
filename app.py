@@ -18,15 +18,17 @@ if not st.session_state.acesso_autorizado:
     st.title("🔐 Acesso Restrito")
     pin = st.text_input("Introduz o código de acesso:", type="password")
 
-    if st.button("Entrar"):
-        if pin == PIN_CORRETO:
-            st.session_state.acesso_autorizado = True
-            del st.session_state["Introduz o código de acesso:"]
-            st.query_params["autorizado"] = "1"
-            st.success("✅ Acesso concedido. A carregar...")
-            st.stop()  # para evitar recarregamento com glitch
-        elif pin != "":
-            st.error("❌ Código incorreto. Tenta novamente.")
+if st.button("Entrar"):
+                if pin == PIN_CORRETO:
+                    st.session_state.acesso_autorizado = True
+                    if "Introduz o código de acesso:" in st.session_state:
+                        del st.session_state["Introduz o código de acesso:"]
+                    st.query_params["autorizado"] = "1"
+                    st.success("✅ Acesso concedido. A carregar...")
+                    st.stop()
+                elif pin != "":
+                    st.error("❌ Código incorreto. Tenta novamente.")
+
 
     st.stop()  # evita mostrar o resto da app
 
