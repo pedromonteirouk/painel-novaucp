@@ -3,7 +3,7 @@ import gspread
 from datetime import datetime, date
 from oauth2client.service_account import ServiceAccountCredentials
 
-    PIN_CORRETO = "9472"
+PIN_CORRETO = "9472"
 
     # Inicializar estado
     if "acesso_autorizado" not in st.session_state:
