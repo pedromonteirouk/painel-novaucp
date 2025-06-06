@@ -9,12 +9,11 @@ if not st.session_state.acesso_autorizado:
     st.title("🔒 Acesso Restrito")
     pin_input = st.text_input("Introduz o código de acesso:", type="password")
 
-    if st.button("🔓 Entrar"):
-        if pin_input == PIN_CORRETO:
-            st.session_state.acesso_autorizado = True
-            st.success("✅ Acesso concedido.")
-        else:
-            st.error("❌ Código incorreto. Tenta novamente.")
+    if pin_input == PIN_CORRETO:
+        st.session_state.acesso_autorizado = True
+        st.experimental_rerun()  # recarrega automaticamente após sucesso
+    elif pin_input != "":
+        st.error("❌ Código incorreto. Tenta novamente.")
     st.stop()
 
 import gspread
