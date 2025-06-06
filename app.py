@@ -2,18 +2,27 @@ import streamlit as st
 
 PIN_CORRETO = "9472"
 
+# Inicializa o estado de autenticação se necessário
 if "acesso_autorizado" not in st.session_state:
     st.session_state.acesso_autorizado = False
 
+# Mostra o formulário de PIN se ainda não estiver autenticado
 if not st.session_state.acesso_autorizado:
     st.title("🔒 Acesso Restrito")
-    pin_input = st.text_input("Introduz o código de acesso:", type="password")
 
-    if pin_input == PIN_CORRETO:
-        st.session_state.acesso_autorizado = True
-        st.experimental_rerun()  # recarrega automaticamente após sucesso
-    elif pin_input != "":
-        st.error("❌ Código incorreto. Tenta novamente.")
+    with st.form("form_acesso"):
+        pin_input = st.text_input("Introduz o código de acesso:",
+                                  type="password")
+        submit = st.form_submit_button("Entrar")
+
+        if submit:
+            if pin_input == PIN_CORRETO:
+                st.session_state.acesso_autorizado = True
+                st.success("✅ Acesso concedido.")
+                st.experimental_rerun()
+            else:
+                st.error("❌ Código incorreto. Tenta novamente.")
+
     st.stop()
 
 import gspread
