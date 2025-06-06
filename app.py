@@ -82,12 +82,9 @@ headers = rows[0]
 data = [dict(zip(headers, row)) for row in rows[1:]]
 
 # Produto e armazém
-produtos = ["(Novo Produto)"] + sorted(
+produtos = sorted(
     set(str(item["Produto"]).strip() for item in data if item.get("Produto")))
 produto_escolhido = st.selectbox("🧊 Escolha um produto:", produtos)
-
-if produto_escolhido == "(Novo Produto)":
-    produto_escolhido = st.text_input("🆕 Nome do novo produto")
 
 armazens = list(
     set(item["ARMAZEM"] for item in data
