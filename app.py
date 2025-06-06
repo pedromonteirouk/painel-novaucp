@@ -1,4 +1,25 @@
 import streamlit as st
+
+# Código PIN de acesso (podes alterar este valor)
+PIN_CORRETO = "9472"
+
+# Verifica se o utilizador já foi autenticado
+if "acesso_autorizado" not in st.session_state:
+    st.session_state.acesso_autorizado = False
+
+# Se não foi autenticado, pedir código
+if not st.session_state.acesso_autorizado:
+    st.title("🔒 Acesso Restrito")
+    pin_input = st.text_input("Introduz o código de acesso:", type="password")
+
+    if pin_input == PIN_CORRETO:
+        st.session_state.acesso_autorizado = True
+        st.success("✅ Acesso concedido.")
+        st.experimental_rerun()
+    elif pin_input:
+        st.error("❌ Código incorreto. Tenta novamente.")
+    st.stop()  # Impede que o resto da app continue a carregar
+
 import gspread
 from datetime import datetime, date
 from oauth2client.service_account import ServiceAccountCredentials
