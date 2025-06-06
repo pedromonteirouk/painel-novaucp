@@ -5,30 +5,30 @@ from oauth2client.service_account import ServiceAccountCredentials
 
 PIN_CORRETO = "9472"
 
-    # Inicializar estado
-    if "acesso_autorizado" not in st.session_state:
-        st.session_state.acesso_autorizado = False
+# Inicializar estado
+if "acesso_autorizado" not in st.session_state:
+    st.session_state.acesso_autorizado = False
 
-    # Verifica query param
-    params = st.query_params
-    if params.get("autorizado") == "1":
-        st.session_state.acesso_autorizado = True
+# Verifica query param
+params = st.query_params
+if params.get("autorizado") == "1":
+    st.session_state.acesso_autorizado = True
 
-    if not st.session_state.acesso_autorizado:
-        st.title("🔐 Acesso Restrito")
-        pin = st.text_input("Introduz o código de acesso:", type="password")
+if not st.session_state.acesso_autorizado:
+    st.title("🔐 Acesso Restrito")
+    pin = st.text_input("Introduz o código de acesso:", type="password")
 
-        if st.button("Entrar"):
-            if pin == PIN_CORRETO:
-                st.session_state.acesso_autorizado = True
-                del st.session_state["Introduz o código de acesso:"]
-                st.query_params["autorizado"] = "1"
-                st.success("✅ Acesso concedido. A carregar...")
-                st.stop()  # para evitar recarregamento com glitch
-            elif pin != "":
-                st.error("❌ Código incorreto. Tenta novamente.")
+    if st.button("Entrar"):
+        if pin == PIN_CORRETO:
+            st.session_state.acesso_autorizado = True
+            del st.session_state["Introduz o código de acesso:"]
+            st.query_params["autorizado"] = "1"
+            st.success("✅ Acesso concedido. A carregar...")
+            st.stop()  # para evitar recarregamento com glitch
+        elif pin != "":
+            st.error("❌ Código incorreto. Tenta novamente.")
 
-        st.stop()  # evita mostrar o resto da app
+    st.stop()  # evita mostrar o resto da app
 
 # Configuração da página
 st.set_page_config(page_title="Painel de Produção - UCP", layout="wide")
