@@ -16,7 +16,8 @@ if not st.session_state.acesso_autorizado:
     if st.button("Entrar"):
         if pin == PIN_CORRETO:
             st.session_state.acesso_autorizado = True
-            st.success("✅ Acesso concedido. Podes prosseguir.")
+            st.experimental_set_query_params(autorizado="1")
+            st.rerun()
         else:
             st.error("❌ Código incorreto. Tenta novamente.")
 
