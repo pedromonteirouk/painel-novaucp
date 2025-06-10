@@ -84,14 +84,7 @@ data = [dict(zip(headers, row)) for row in rows[1:]]
 # Produto e armazém
 produtos = sorted(
     set(str(item["Produto"]).strip() for item in data if item.get("Produto")))
-produtos_opcoes = ["(Novo Produto)"] + produtos
-produto_escolhido = st.selectbox("🧊 Escolha um produto:", produtos_opcoes)
-
-if produto_escolhido == "(Novo Produto)":
-    produto_novo = st.text_input("✏️ Escreva o nome do novo produto:",
-                                 key="produto_input")
-else:
-    produto_novo = produto_escolhido  # mantém o já selecionado
+produto_escolhido = st.selectbox("🧊 Escolha um produto:", produtos)
 
 armazens = list(
     set(item["ARMAZEM"] for item in data
@@ -163,7 +156,7 @@ if st.button("💾 Gravar alterações"):
 
     # Preparar nova linha
     nova_linha = {
-        "Produto": produto_novo,
+        "Produto": produto_escolhido,
         "ARMAZEM": armazem_escolhido,
         "STOCK": stock_digitado,
         "LOTE": lote_digitado,
