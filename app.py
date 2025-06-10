@@ -93,9 +93,15 @@ if produto_escolhido == "(Novo Produto)":
 else:
     produto_novo = produto_escolhido  # mantém o já selecionado
 
-armazens = list(
-    set(item["ARMAZEM"] for item in data
-        if item["Produto"] == produto_escolhido))
+ARMAZENS_FIXOS = ["UCP", "MAIORCA", "CLOUD"]
+
+if produto_escolhido == "(Novo Produto)":
+    armazens = ARMAZENS_FIXOS
+else:
+    armazens = sorted(
+        set(item["ARMAZEM"] for item in data
+            if item["Produto"] == produto_escolhido))
+
 armazem_escolhido = st.selectbox("🏢 Escolha um armazém:", armazens)
 
 # Registros filtrados
