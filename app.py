@@ -23,10 +23,9 @@ if not st.session_state.acesso_autorizado:
         if pin == PIN_CORRETO:
             st.session_state.acesso_autorizado = True
             st.success("✅ Acesso concedido. A carregar aplicação...")
-            input_placeholder.empty()  # limpa o input para não piscar
-            st.experimental_rerun()
-        else:
-            st.error("❌ Código incorreto. Tenta novamente.")
+            st.stop()  # aguarda próximo ciclo
+    else:
+        st.error("❌ Código incorreto. Tenta novamente.")
 
     st.stop()  # impede continuação da app
 
