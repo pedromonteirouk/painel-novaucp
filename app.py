@@ -23,7 +23,7 @@ if not st.session_state.acesso_autorizado:
         st.session_state.tentou_entrar = True
         if pin == PIN_CORRETO:
             st.session_state.acesso_autorizado = True
-            st.experimental_rerun()
+            st.rerun()
 
     # Mostrar erro apenas após tentativa
     if st.session_state.tentou_entrar and not st.session_state.acesso_autorizado:
