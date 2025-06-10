@@ -111,12 +111,15 @@ armazem_escolhido = st.selectbox("🏢 Escolha um armazém:", armazens)
 
 # Registros filtrados
 registros_produto = [
-    item for item in data if item["Produto"] == produto_escolhido
-    and item["ARMAZEM"] == armazem_escolhido
+    item for item in data
+    if str(item["Produto"]).strip() == produto_escolhido.strip()
+    and str(item["ARMAZEM"]).strip() == armazem_escolhido.strip()
 ]
 
 lotes_existentes = list(
-    set(str(item["LOTE"]) for item in registros_produto if item.get("LOTE")))
+    set(
+        str(item["LOTE"]).strip() for item in registros_produto
+        if item.get("LOTE")))
 lotes_opcoes = ["(Novo Lote)"] + sorted(lotes_existentes)
 lote_escolhido = st.selectbox("📦 Escolha um lote:", lotes_opcoes)
 
