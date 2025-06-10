@@ -6,25 +6,28 @@ from oauth2client.service_account import ServiceAccountCredentials
 import streamlit as st
 
 # Definir o código PIN
-PIN_CORRETO = "9472"
+    PIN_CORRETO = "9472"
 
-# Verificar se já tem acesso
-if "acesso_autorizado" not in st.session_state:
-    st.session_state.acesso_autorizado = False
+    if "acesso_autorizado" not in st.session_state:
+        st.session_state.acesso_autorizado = False
 
-if not st.session_state.acesso_autorizado:
-    st.markdown("### 🔒 Acesso restrito")
-    pin = st.text_input("Introduz o código de acesso:", type="password")
+    if not st.session_state.acesso_autorizado:
+        st.title("🔐 Acesso Restrito")
 
-    if st.button("Entrar"):
-        if pin == PIN_CORRETO:
-            st.session_state.acesso_autorizado = True
-            if "Introduz o código de acesso:" in st.session_state:
-                del st.session_state["Introduz o código de acesso:"]
-            st.rerun()
-        else:
-            st.error("❌ Código incorreto. Tenta novamente.")
-    st.stop()  # Impede carregamento do resto da app até o acesso ser concedido
+        # Criar um placeholder que poderá ser limpo após sucesso
+        input_placeholder = st.empty()
+        pin = input_placeholder.text_input("Introduz o código de acesso:", type="password")
+
+        if st.button("Entrar"):
+            if pin == PIN_CORRETO:
+                st.session_state.acesso_autorizado = True
+                st.success("✅ Acesso concedido. A carregar aplicação...")
+                input_placeholder.empty()  # limpa o input para não piscar
+                st.experimental_rerun()
+            else:
+                st.error("❌ Código incorreto. Tenta novamente.")
+
+        st.stop()  # impede continuação da app
 
 # Configuração da página
 st.set_page_config(page_title="Painel de Produção - UCP", layout="wide")
