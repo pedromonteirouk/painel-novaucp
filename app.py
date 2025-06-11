@@ -141,4 +141,19 @@ if st.button("💾 Gravar alterações"):
 
     if lote_escolhido == "(Novo Lote)":
         worksheet.append_row(valores_para_inserir)
-        st.success("✔️ Novo lote adic
+        st.success("✔️ Novo lote adicionado com sucesso!")
+st.rerun()
+else:
+    todas_linhas = worksheet.get_all_values()
+    idx_lote = todas_colunas.index("LOTE")
+    row_to_update = None
+    for i, linha in enumerate(todas_linhas, start=2):
+        if linha[idx_lote] == lote_escolhido:
+            row_to_update = i
+            break
+    if row_to_update:
+        worksheet.update(f"A{row_to_update}", [valores_para_inserir])
+        st.success("✔️ Lote atualizado com sucesso!")
+        st.rerun()
+    else:
+        st.error("❌ Lote não encontrado para atualização.")
