@@ -1,9 +1,16 @@
 import requests
 import streamlit as st
+import os
 
 # ---------------- CONFIGURAÇÕES ---------------- #
 SHOP_URL = "https://bbgourmet-8638.myshopify.com"
-ACCESS_TOKEN = "INSERE_O_TEU_ACCESS_TOKEN_AQUI"
+ACCESS_TOKEN = os.environ.get("SHOPIFY_TOKEN", "")
+
+if not ACCESS_TOKEN:
+    st.error(
+        "❌ Access Token não definido. Vai a Settings > Secrets e adiciona SHOPIFY_TOKEN."
+    )
+    st.stop()
 
 HEADERS = {
     "X-Shopify-Access-Token": ACCESS_TOKEN,
