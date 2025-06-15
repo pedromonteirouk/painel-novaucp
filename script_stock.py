@@ -1,125 +1,84 @@
-import streamlit as st
 import requests
-import os
+import streamlit as st
 
-# --- CONFIGURAÇÕES ---
+# ---------------- CONFIGURAÇÕES ---------------- #
 SHOP_URL = "https://bbgourmet-8638.myshopify.com"
-ACCESS_TOKEN = os.environ.get("SHOPIFY_TOKEN", "")
-
-if not ACCESS_TOKEN:
-    st.error(
-        "❌ Access Token não definido. Vai a Settings > Secrets e adiciona SHOPIFY_TOKEN."
-    )
-    st.stop()
+ACCESS_TOKEN = "INSERE_O_TEU_ACCESS_TOKEN_AQUI"
 
 HEADERS = {
     "X-Shopify-Access-Token": ACCESS_TOKEN,
     "Content-Type": "application/json"
 }
 
-# --- COLEÇÕES BBGOURMET ---
-COLECOES = {
-    "Sopas": "sopas",
-    "Sopas Diet": "sopas-diet",
-    "Carnes": "carnes",
-    "Peixes": "peixes",
-    "Vegetarianos": "vegetarianos",
-    "Familiares": "familiares",
-    "Guarnições": "guarnicoes"
-}
+# ---------------- FUNÇÕES ---------------- #
 
 
-# --- FUNÇÕES ---
-def obter_produtos_ativos_por_colecao(handle_colecao):
-    url = f"{SHOP_URL}/admin/api/2023-07/collections/{handle_colecao}/products.json?status=active&limit=250"
-    resposta = requests.get(url, headers=HEADERS)
-    if resposta.status_code != 200:
-        st.error(
-            f"Erro ao buscar produtos da coleção '{handle_colecao}': {resposta.text}"
-        )
+@st.cache_data
+def obter_produtos_da_colecao(handle_colecao):
+    """Obter produtos de uma coleção específica (por handle)."""
+    colecao_url = f"{SHOP_URL}/admin/api/2023-07/custom_collections.json"
+    r = requests.get(colecao_url, headers=HEADERS)
+    if r.status_code != 200:
+        st.error("Erro a obter coleções.")
         return []
-    return resposta.json().get("products", [])
+
+    colecoes = r.json().get("custom_collections", [])
+    colecao_id = next(
+        (c["id"] for c in colecoes if c["handle"] == handle_colecao), None)
+    if not colecao_id:
+        st.warning("Coleção não encontrada.")
+        return []
+
+    produtos_url = f"{SHOP_URL}/admin/api/2023-07/collects.json?collection_id={colecao_id}&limit=250"
+    r = requests.get(produtos_url, headers=HEADERS)
+    if r.status_code != 200:
+        st.error("Erro a obter produtos da coleção.")
+        return []
+
+    product_ids = [c["product_id"] for c in r.json().get("collects", [])]
+
+    produtos = []
+    for pid in product_ids:
+        produto_url = f"{SHOP_URL}/admin/api/2023-07/products/{pid}.json"
+        r = requests.get(produto_url, headers=HEADERS)
+        if r.status_code == 200:
+            produtos.append(r.json().get("product"))
+    return produtos
 
 
-def obter_stock_por_inventory_item(inventory_item_id, location_id):
-    url = f"{SHOP_URL}/admin/api/2023-07/inventory_levels.json?inventory_item_ids={inventory_item_id}&location_ids={location_id}"
-    resposta = requests.get(url, headers=HEADERS)
-    if resposta.status_code != 200:
-        return None
-    dados = resposta.json().get("inventory_levels", [])
-    if dados:
-        return dados[0].get("available")
-    return None
+@st.cache_data
+def obter_stock_por_produto(produto, location_id):
+    resultado = []
+    for variante in produto["variants"]:
+        inventory_item_id = variante["inventory_item_id"]
+        stock_url = f"{SHOP_URL}/admin/api/2023-07/inventory_levels.json?inventory_item_ids={inventory_item_id}&location_ids={location_id}"
+        r = requests.get(stock_url, headers=HEADERS)
+        if r.status_code == 200:
+            levels = r.json().get("inventory_levels", [])
+            if levels:
+                stock = levels[0]["available"]
+                resultado.append({"title": produto["title"], "stock": stock})
+    return resultado
 
 
-def cor_stock(qtd):
-    if qtd <= 0:
-        return "#ff4d4d"  # vermelho
-    elif qtd <= 10:
-        return "#ffa94d"  # laranja
-    elif qtd >= 20:
-        return "#94d82d"  # verde
-    else:
-        return "#d3d3d3"  # cinza
+# ---------------- STREAMLIT UI ---------------- #
 
-
-# --- INTERFACE ---
-st.set_page_config("Dashboard de Stock - BBGourmet", layout="wide")
 st.title("Dashboard de Stock - BBGourmet")
-
 location_id = st.text_input("ID do local de stock (location_id da loja):")
 
 if location_id:
-    for nome_colecao, handle in COLECOES.items():
-        st.subheader(f"🌟 {nome_colecao}")
-        produtos = obter_produtos_ativos_por_colecao(handle)
+    produtos = obter_produtos_da_colecao("refrigeradoscongelados")
+    resultado = []
 
-        lista_produtos = []
-        for produto in produtos:
-            for variante in produto.get("variants", []):
-                inventory_item_id = variante.get("inventory_item_id")
-                titulo = f"{produto['title']} ({variante['title']})"
-                stock = obter_stock_por_inventory_item(inventory_item_id,
-                                                       location_id)
-                if stock is not None:
-                    lista_produtos.append({
-                        "titulo":
-                        titulo,
-                        "stock":
-                        stock,
-                        "inventory_item_id":
-                        inventory_item_id
-                    })
+    for produto in produtos:
+        stock_info = obter_stock_por_produto(produto, location_id)
+        resultado.extend(stock_info)
 
-        lista_produtos.sort(key=lambda x: x["stock"])
+    produtos_ordenados = sorted(
+        resultado,
+        key=lambda x: (x['stock'] == 0, x['stock'] <= 10, -x['stock']))
 
-        for item in lista_produtos:
-            col1, col2 = st.columns([4, 1])
-            with col1:
-                st.write(item["titulo"])
-            with col2:
-                cor = cor_stock(item["stock"])
-                novo_stock = st.number_input(
-                    "",
-                    value=item["stock"],
-                    step=1,
-                    key=f"{item['inventory_item_id']}")
-                st.markdown(
-                    f"<div style='background-color:{cor};padding:5px;border-radius:5px;text-align:center;'>{novo_stock}</div>",
-                    unsafe_allow_html=True)
-
-                # Atualizar stock se alterado
-                if novo_stock != item["stock"]:
-                    url_update = f"{SHOP_URL}/admin/api/2023-07/inventory_levels/set.json"
-                    payload = {
-                        "location_id": location_id,
-                        "inventory_item_id": item["inventory_item_id"],
-                        "available": int(novo_stock)
-                    }
-                    r = requests.post(url_update,
-                                      headers=HEADERS,
-                                      json=payload)
-                    if r.status_code == 200:
-                        st.success(f"Stock atualizado para {novo_stock}!")
-                    else:
-                        st.error(f"Erro ao atualizar stock: {r.text}")
+    st.subheader("📦 Produtos da coleção 'Refrigerados & Congelados'")
+    for p in produtos_ordenados:
+        cor = "🔴" if p['stock'] == 0 else "🟠" if p['stock'] <= 10 else "🟢"
+        st.write(f"{cor} **{p['title']}** — {p['stock']} unidades")
