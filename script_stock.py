@@ -4,7 +4,7 @@ import os
 
 # --- CONFIGURAÇÕES ---
 SHOP_URL = "https://bbgourmet-8638.myshopify.com"
-ACCESS_TOKEN = os.environ.get("", "")
+ACCESS_TOKEN = os.environ.get("SHOPIFY_TOKEN", "")
 
 if not ACCESS_TOKEN:
     st.error(
