@@ -130,7 +130,9 @@ if handle_selecionado:
     )
 
     updated_df = grid_response["data"]
-    changed_rows = df[df["Stock"] != updated_df["Stock"]]
+    merged_df = df.merge(updated_df, on="inventory_item_id", suffixes=("_original", "_editado"))
+changed_rows = merged_df[merged_df["Stock_original"] != merged_df["Stock_editado"]]
+
 
     if not changed_rows.empty:
         st.markdown("### ✅ Alterar stock")
