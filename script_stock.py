@@ -43,7 +43,7 @@ colecoes_ocultas = ["descontinuado", "oculto"]
 # ---------------- FUNÇÕES ---------------- #
 
 
-@st.cache_data
+@st.cache_data(ttl=300)
 def obter_colecoes():
     url = f"{SHOP_URL}/admin/api/2023-07/custom_collections.json?limit=250"
     r = requests.get(url, headers=HEADERS)
@@ -52,7 +52,7 @@ def obter_colecoes():
     return r.json().get("custom_collections", [])
 
 
-@st.cache_data
+@st.cache_data(ttl=300)
 def obter_produtos_da_colecao(handle_colecao):
     colecoes = obter_colecoes()
     colecao_id = next(
@@ -130,60 +130,36 @@ handle_opcoes = {
 titulo_sel = st.selectbox("Seleciona uma coleção:", list(handle_opcoes.keys()))
 handle = handle_opcoes[titulo_sel]
 
-produtos = obter_produtos_da_colecao(handle)
-df = obter_stock_batch(produtos)
+with st.spinner("🔄 A carregar produtos..."):
+    produtos = obter_produtos_da_colecao(handle)
+    df = obter_stock_batch(produtos)
+
 df.sort_values("Stock", inplace=True)
 
-# Divisão de stock
-cores = [("🔴 Sem stock", df[df["Stock"] == 0], "#ff4d4d"),
-         ("🟠 Pouco stock (1-10)", df[(df["Stock"] > 0) & (df["Stock"] <= 10)],
-          "#ffa94d"),
-         ("🟢 Stock suficiente (>20)", df[df["Stock"] > 20], "#94d82d")]
+st.subheader("📦 Edição de Stock")
+gb = GridOptionsBuilder.from_dataframe(df)
+gb.configure_column("Stock", editable=True, type=["numericColumn"])
 
-for titulo, df_cor, cor_hex in cores:
-    st.subheader(titulo)
-    gb = GridOptionsBuilder.from_dataframe(df_cor)
-    gb.configure_column("Stock",
-                        editable=True,
-                        type=["numericColumn"],
-                        cellStyle={
-                            "styleConditions": [{
-                                "condition": f"params.value == 0",
-                                "style": {
-                                    "backgroundColor": "#ff4d4d"
-                                }
-                            }, {
-                                "condition": f"params.value <= 10",
-                                "style": {
-                                    "backgroundColor": "#ffa94d"
-                                }
-                            }, {
-                                "condition": f"params.value > 20",
-                                "style": {
-                                    "backgroundColor": "#94d82d"
-                                }
-                            }]
-                        })
-    grid = AgGrid(df_cor,
-                  gridOptions=gb.build(),
-                  update_mode=GridUpdateMode.MODEL_CHANGED,
-                  editable=True,
-                  height=300,
-                  use_container_width=True,
-                  fit_columns_on_grid_load=True)
-    editado = grid["data"]
-    merged = df_cor.merge(editado,
-                          on="inventory_item_id",
-                          suffixes=("_original", "_editado"))
-    alterados = merged[merged["Stock_original"] != merged["Stock_editado"]]
+grid = AgGrid(df,
+              gridOptions=gb.build(),
+              update_mode=GridUpdateMode.MODEL_CHANGED,
+              editable=True,
+              height=600,
+              use_container_width=True,
+              fit_columns_on_grid_load=True)
 
-    if not alterados.empty:
-        for _, row in alterados.iterrows():
-            novo = int(row["Stock_editado"])
-            sucesso = atualizar_stock(row["inventory_item_id"], novo)
-            if sucesso:
-                st.success(
-                    f"{row['Produto_editado']} → atualizado para {novo} unidades"
-                )
-            else:
-                st.error(f"Erro ao atualizar {row['Produto_editado']}")
+editado = grid["data"]
+merged = df.merge(editado,
+                  on="inventory_item_id",
+                  suffixes=("_original", "_editado"))
+alterados = merged[merged["Stock_original"] != merged["Stock_editado"]]
+
+if not alterados.empty:
+    for _, row in alterados.iterrows():
+        novo = int(row["Stock_editado"])
+        sucesso = atualizar_stock(row["inventory_item_id"], novo)
+        if sucesso:
+            st.success(
+                f"{row['Produto_editado']} → atualizado para {novo} unidades")
+        else:
+            st.error(f"Erro ao atualizar {row['Produto_editado']}")
