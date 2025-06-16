@@ -115,13 +115,7 @@ if handle_selecionado:
     st.subheader(f"📆 Produtos da coleção: {handle_selecionado}")
 
     gb = GridOptionsBuilder.from_dataframe(df)
-    gb.configure_column("Stock",
-                        editable=True,
-                        cellStyle=lambda params: {
-                            "backgroundColor":
-                            "#ff4d4d" if params.value == 0 else "#ffa94d"
-                            if params.value <= 10 else "#94d82d"
-                        })
+    gb.configure_column("Stock", editable=True, type=["numericColumn"])
     gb.configure_selection("single")
     grid_options = gb.build()
 
@@ -133,7 +127,6 @@ if handle_selecionado:
         height=500,
         use_container_width=True,
         fit_columns_on_grid_load=True,
-        allow_unsafe_jscode=True,
     )
 
     updated_df = grid_response["data"]
