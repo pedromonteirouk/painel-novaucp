@@ -119,28 +119,29 @@ if handle_selecionado:
     gb.configure_selection("single")
     grid_options = gb.build()
 
-    grid_response = AgGrid(
-        df,
-        gridOptions=grid_options,
-        update_mode=GridUpdateMode.MODEL_CHANGED,
-        editable=True,
-        height=500,
-        use_container_width=True,
-        fit_columns_on_grid_load=True,
-    )
+    grid_response = AgGrid(df,
+                           gridOptions=grid_options,
+                           update_mode=GridUpdateMode.MODEL_CHANGED,
+                           editable=True,
+                           height=500,
+                           use_container_width=True,
+                           fit_columns_on_grid_load=True)
 
     updated_df = grid_response["data"]
-    merged_df = df.merge(updated_df, on="inventory_item_id", suffixes=("_original", "_editado"))
-changed_rows = merged_df[merged_df["Stock_original"] != merged_df["Stock_editado"]]
-
+    merged_df = df.merge(updated_df,
+                         on="inventory_item_id",
+                         suffixes=("_original", "_editado"))
+    changed_rows = merged_df[merged_df["Stock_original"] !=
+                             merged_df["Stock_editado"]]
 
     if not changed_rows.empty:
         st.markdown("### ✅ Alterar stock")
-        for i, row in changed_rows.iterrows():
-            novo = updated_df.loc[i, "Stock"]
+        for _, row in changed_rows.iterrows():
+            novo = int(row["Stock_editado"])
             sucesso = atualizar_stock(row["inventory_item_id"], novo)
             if sucesso:
                 st.success(
-                    f"{row['Produto']} → atualizado para {novo} unidades")
+                    f"{row['Produto_editado']} → atualizado para {novo} unidades"
+                )
             else:
-                st.error(f"Erro ao atualizar {row['Produto']}")
+                st.error(f"Erro ao atualizar {row['Produto_editado']}")
