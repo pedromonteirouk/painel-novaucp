@@ -2,6 +2,7 @@ import requests
 import streamlit as st
 import os
 import pandas as pd
+from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 
 # ---------------- CONFIGURAÇÕES ---------------- #
 SHOP_URL = "https://bbgourmet-8638.myshopify.com"
@@ -113,26 +114,38 @@ if handle_selecionado:
 
     st.subheader(f"📆 Produtos da coleção: {handle_selecionado}")
 
-    def cor_linha(val):
-        cor = "background-color: #ff4d4d" if val == 0 else \
-              "background-color: #ffa94d" if val <= 10 else \
-              "background-color: #94d82d" if val > 20 else ""
-        return cor
+    gb = GridOptionsBuilder.from_dataframe(df)
+    gb.configure_column("Stock",
+                        editable=True,
+                        cellStyle=lambda params: {
+                            "backgroundColor":
+                            "#ff4d4d" if params.value == 0 else "#ffa94d"
+                            if params.value <= 10 else "#94d82d"
+                        })
+    gb.configure_selection("single")
+    grid_options = gb.build()
 
-    styled_df = df.style.applymap(cor_linha, subset=["Stock"])
-    st.dataframe(styled_df, use_container_width=True)
+    grid_response = AgGrid(
+        df,
+        gridOptions=grid_options,
+        update_mode=GridUpdateMode.MODEL_CHANGED,
+        editable=True,
+        height=500,
+        use_container_width=True,
+        fit_columns_on_grid_load=True,
+        allow_unsafe_jscode=True,
+    )
 
-    st.markdown("### ✏️ Atualizar stock")
-    for i, row in df.iterrows():
-        novo_valor = st.number_input(f"{row['Produto']}",
-                                     value=int(row['Stock']),
-                                     step=1,
-                                     key=row["inventory_item_id"])
-        if novo_valor != row['Stock']:
-            sucesso = atualizar_stock(row['inventory_item_id'], novo_valor)
+    updated_df = grid_response["data"]
+    changed_rows = df[df["Stock"] != updated_df["Stock"]]
+
+    if not changed_rows.empty:
+        st.markdown("### ✅ Alterar stock")
+        for i, row in changed_rows.iterrows():
+            novo = updated_df.loc[i, "Stock"]
+            sucesso = atualizar_stock(row["inventory_item_id"], novo)
             if sucesso:
                 st.success(
-                    f"✅ {row['Produto']} atualizado para {novo_valor} unidades"
-                )
+                    f"{row['Produto']} → atualizado para {novo} unidades")
             else:
-                st.error("Erro ao atualizar o stock.")
+                st.error(f"Erro ao atualizar {row['Produto']}")
