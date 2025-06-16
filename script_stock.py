@@ -1,10 +1,12 @@
 import requests
 import streamlit as st
 import os
+import pandas as pd
 
 # ---------------- CONFIGURAÇÕES ---------------- #
 SHOP_URL = "https://bbgourmet-8638.myshopify.com"
 ACCESS_TOKEN = os.environ.get("SHOPIFY_TOKEN", "")
+LOCATION_ID = "71561281800"
 
 if not ACCESS_TOKEN:
     st.error(
@@ -56,44 +58,81 @@ def obter_produtos_da_colecao(handle_colecao):
     return produtos
 
 
-@st.cache_data
-def obter_stock_por_produto(produto, location_id):
+def obter_stock_por_produto(produto):
     resultado = []
     for variante in produto["variants"]:
         inventory_item_id = variante["inventory_item_id"]
-        stock_url = f"{SHOP_URL}/admin/api/2023-07/inventory_levels.json?inventory_item_ids={inventory_item_id}&location_ids={location_id}"
+        stock_url = f"{SHOP_URL}/admin/api/2023-07/inventory_levels.json?inventory_item_ids={inventory_item_id}&location_ids={LOCATION_ID}"
         r = requests.get(stock_url, headers=HEADERS)
         if r.status_code == 200:
             levels = r.json().get("inventory_levels", [])
             if levels:
                 stock = levels[0]["available"]
-                resultado.append({"title": produto["title"], "stock": stock})
+                resultado.append({
+                    "Produto": f"{produto['title']} | {variante['title']}",
+                    "Stock": stock,
+                    "inventory_item_id": inventory_item_id
+                })
     return resultado
+
+
+def atualizar_stock(inventory_item_id, novo_stock):
+    payload = {
+        "location_id": LOCATION_ID,
+        "inventory_item_id": inventory_item_id,
+        "available": int(novo_stock)
+    }
+    r = requests.post(
+        f"{SHOP_URL}/admin/api/2023-07/inventory_levels/set.json",
+        headers=HEADERS,
+        json=payload)
+    return r.status_code == 200
 
 
 # ---------------- STREAMLIT UI ---------------- #
 
 st.title("Dashboard de Stock - BBGourmet")
-location_id = st.text_input("ID do local de stock (location_id da loja):")
 
 colecoes = obter_colecoes()
-handle_opcoes = [c["handle"] for c in colecoes]
-handle_selecionado = st.selectbox("Seleciona uma coleção:",
-                                  handle_opcoes) if handle_opcoes else None
+handle_opcoes = {c["title"]: c["handle"] for c in colecoes}
+titulo_selecionado = st.selectbox("Seleciona uma coleção:",
+                                  list(handle_opcoes.keys()))
+handle_selecionado = handle_opcoes.get(titulo_selecionado)
 
-if location_id and handle_selecionado:
+if handle_selecionado:
     produtos = obter_produtos_da_colecao(handle_selecionado)
     resultado = []
 
     for produto in produtos:
-        stock_info = obter_stock_por_produto(produto, location_id)
+        stock_info = obter_stock_por_produto(produto)
         resultado.extend(stock_info)
 
-    produtos_ordenados = sorted(
-        resultado,
-        key=lambda x: (x['stock'] == 0, x['stock'] <= 10, -x['stock']))
+    df = pd.DataFrame(resultado)
+    df.sort_values(by="Stock", inplace=True)
+    df.reset_index(drop=True, inplace=True)
 
-    st.subheader(f"📦 Produtos da coleção: {handle_selecionado}")
-    for p in produtos_ordenados:
-        cor = "🔴" if p['stock'] == 0 else "🟠" if p['stock'] <= 10 else "🟢"
-        st.write(f"{cor} **{p['title']}** — {p['stock']} unidades")
+    st.subheader(f"📆 Produtos da coleção: {handle_selecionado}")
+
+    def cor_linha(val):
+        cor = "background-color: #ff4d4d" if val == 0 else \
+              "background-color: #ffa94d" if val <= 10 else \
+              "background-color: #94d82d" if val > 20 else ""
+        return cor
+
+    styled_df = df.style.applymap(cor_linha, subset=["Stock"])
+    st.dataframe(styled_df, use_container_width=True)
+
+    st.markdown("### ✏️ Atualizar stock")
+    for i, row in df.iterrows():
+        novo_valor = st.number_input(f"{row['Produto']}",
+                                     value=int(row['Stock']),
+                                     step=1,
+                                     key=row["inventory_item_id"])
+        if novo_valor != row['Stock']:
+            sucesso = atualizar_stock(row['inventory_item_id'], novo_valor)
+            if sucesso:
+                st.success(
+                    f"✅ {row['Produto']} atualizado para {novo_valor} unidades"
+                )
+            else:
+                st.error("Erro ao atualizar o stock.")
