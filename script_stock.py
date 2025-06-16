@@ -134,65 +134,56 @@ produtos = obter_produtos_da_colecao(handle)
 df = obter_stock_batch(produtos)
 df.sort_values("Stock", inplace=True)
 
-# Divisão
-df_vermelho = df[df["Stock"] == 0]
-df_laranja = df[(df["Stock"] > 0) & (df["Stock"] <= 10)]
-df_verde = df[df["Stock"] > 20]
+# Divisão de stock
+cores = [("🔴 Sem stock", df[df["Stock"] == 0], "#ff4d4d"),
+         ("🟠 Pouco stock (1-10)", df[(df["Stock"] > 0) & (df["Stock"] <= 10)],
+          "#ffa94d"),
+         ("🟢 Stock suficiente (>20)", df[df["Stock"] > 20], "#94d82d")]
 
-st.subheader("🔴 Sem stock")
-st.dataframe(df_vermelho, use_container_width=True)
+for titulo, df_cor, cor_hex in cores:
+    st.subheader(titulo)
+    gb = GridOptionsBuilder.from_dataframe(df_cor)
+    gb.configure_column("Stock",
+                        editable=True,
+                        type=["numericColumn"],
+                        cellStyle={
+                            "styleConditions": [{
+                                "condition": f"params.value == 0",
+                                "style": {
+                                    "backgroundColor": "#ff4d4d"
+                                }
+                            }, {
+                                "condition": f"params.value <= 10",
+                                "style": {
+                                    "backgroundColor": "#ffa94d"
+                                }
+                            }, {
+                                "condition": f"params.value > 20",
+                                "style": {
+                                    "backgroundColor": "#94d82d"
+                                }
+                            }]
+                        })
+    grid = AgGrid(df_cor,
+                  gridOptions=gb.build(),
+                  update_mode=GridUpdateMode.MODEL_CHANGED,
+                  editable=True,
+                  height=300,
+                  use_container_width=True,
+                  fit_columns_on_grid_load=True)
+    editado = grid["data"]
+    merged = df_cor.merge(editado,
+                          on="inventory_item_id",
+                          suffixes=("_original", "_editado"))
+    alterados = merged[merged["Stock_original"] != merged["Stock_editado"]]
 
-with st.expander("🟠 Ver produtos com pouco stock"):
-    st.dataframe(df_laranja, use_container_width=True)
-
-with st.expander("🟢 Ver produtos com stock suficiente"):
-    st.dataframe(df_verde, use_container_width=True)
-
-st.markdown("### ✏️ Editar valores")
-
-gb = GridOptionsBuilder.from_dataframe(df)
-gb.configure_column("Stock",
-                    editable=True,
-                    type=["numericColumn"],
-                    cellStyle={
-                        "styleConditions": [{
-                            "condition": "params.value == 0",
-                            "style": {
-                                "backgroundColor": "#ff4d4d"
-                            }
-                        }, {
-                            "condition": "params.value <= 10",
-                            "style": {
-                                "backgroundColor": "#ffa94d"
-                            }
-                        }, {
-                            "condition": "params.value > 20",
-                            "style": {
-                                "backgroundColor": "#94d82d"
-                            }
-                        }]
-                    })
-
-grid = AgGrid(df,
-              gridOptions=gb.build(),
-              update_mode=GridUpdateMode.MODEL_CHANGED,
-              editable=True,
-              height=400,
-              use_container_width=True,
-              fit_columns_on_grid_load=True)
-
-editado = grid["data"]
-merged = df.merge(editado,
-                  on="inventory_item_id",
-                  suffixes=("_original", "_editado"))
-alterados = merged[merged["Stock_original"] != merged["Stock_editado"]]
-
-if not alterados.empty:
-    for _, row in alterados.iterrows():
-        novo = int(row["Stock_editado"])
-        sucesso = atualizar_stock(row["inventory_item_id"], novo)
-        if sucesso:
-            st.success(
-                f"{row['Produto_editado']} → atualizado para {novo} unidades")
-        else:
-            st.error(f"Erro ao atualizar {row['Produto_editado']}")
+    if not alterados.empty:
+        for _, row in alterados.iterrows():
+            novo = int(row["Stock_editado"])
+            sucesso = atualizar_stock(row["inventory_item_id"], novo)
+            if sucesso:
+                st.success(
+                    f"{row['Produto_editado']} → atualizado para {novo} unidades"
+                )
+            else:
+                st.error(f"Erro ao atualizar {row['Produto_editado']}")
