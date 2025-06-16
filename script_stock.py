@@ -21,15 +21,18 @@ HEADERS = {
 
 
 @st.cache_data
-def obter_produtos_da_colecao(handle_colecao):
-    """Obter produtos de uma coleção específica (por handle)."""
-    colecao_url = f"{SHOP_URL}/admin/api/2023-07/custom_collections.json"
-    r = requests.get(colecao_url, headers=HEADERS)
+def obter_colecoes():
+    url = f"{SHOP_URL}/admin/api/2023-07/custom_collections.json?limit=250"
+    r = requests.get(url, headers=HEADERS)
     if r.status_code != 200:
-        st.error("Erro a obter coleções.")
+        st.error("Erro ao obter coleções.")
         return []
+    return r.json().get("custom_collections", [])
 
-    colecoes = r.json().get("custom_collections", [])
+
+@st.cache_data
+def obter_produtos_da_colecao(handle_colecao):
+    colecoes = obter_colecoes()
     colecao_id = next(
         (c["id"] for c in colecoes if c["handle"] == handle_colecao), None)
     if not colecao_id:
@@ -73,8 +76,13 @@ def obter_stock_por_produto(produto, location_id):
 st.title("Dashboard de Stock - BBGourmet")
 location_id = st.text_input("ID do local de stock (location_id da loja):")
 
-if location_id:
-    produtos = obter_produtos_da_colecao("refrigeradoscongelados")
+colecoes = obter_colecoes()
+handle_opcoes = [c["handle"] for c in colecoes]
+handle_selecionado = st.selectbox("Seleciona uma coleção:",
+                                  handle_opcoes) if handle_opcoes else None
+
+if location_id and handle_selecionado:
+    produtos = obter_produtos_da_colecao(handle_selecionado)
     resultado = []
 
     for produto in produtos:
@@ -85,7 +93,7 @@ if location_id:
         resultado,
         key=lambda x: (x['stock'] == 0, x['stock'] <= 10, -x['stock']))
 
-    st.subheader("📦 Produtos da coleção 'Refrigerados & Congelados'")
+    st.subheader(f"📦 Produtos da coleção: {handle_selecionado}")
     for p in produtos_ordenados:
         cor = "🔴" if p['stock'] == 0 else "🟠" if p['stock'] <= 10 else "🟢"
         st.write(f"{cor} **{p['title']}** — {p['stock']} unidades")
