@@ -82,12 +82,13 @@ if lote_escolhido != "(Novo Lote)":
             registro = item
             break
 
-valor_ac3 = worksheet.acell("AC3").value or ""
+valor_a1 = worksheet.acell("A1").value or ""
 data_semana = st.text_input("🗓️ Data / Semana",
-                            value=valor_ac3,
+                            value=valor_a1,
                             key="semana_input")
+
 if st.button("💾 Atualizar Data / Semana"):
-    worksheet.update_acell("AC3", data_semana)
+    worksheet.update_acell("A1", data_semana)
     st.success("✔️ Data / Semana atualizada!")
     st.rerun()
 
