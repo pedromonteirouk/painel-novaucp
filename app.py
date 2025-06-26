@@ -47,7 +47,6 @@ produtos = sorted(
     set(
         str(item.get("Produto", "")).strip() for item in data
         if item.get("Produto", "").strip()))
-
 produtos_opcoes = ["(Novo Produto)"] + produtos
 col1, col2 = st.columns(2)
 with col1:
@@ -85,11 +84,6 @@ if lote_escolhido != "(Novo Lote)":
             registro = item
             break
 
-# Botão de gravar no topo
-if st.button("📂 Gravar dados", key="gravar_topo"):
-    st.session_state["gravar"] = True
-    st.rerun()
-
 valor_a1 = worksheet.acell("AG1").value or ""
 data_semana = st.text_input("🗓️ Data / Semana",
                             value=valor_a1,
@@ -112,8 +106,12 @@ lote = col2.text_input("Lote",
                        value=str(registro.get("LOTE", "")),
                        key="lote_input")
 
-dt_prod_raw = registro.get("DT PRODUÇÃO", "")
-dt_val_raw = registro.get("DT VALIDADE", "")
+# Datas
+dt_prod_raw = registro.get("DT PROD", "")
+dt_val_raw = registro.get("DT VAL", "")
+dt_cong_raw = registro.get("DT CONG", "")
+dias_val_raw = registro.get("Dias Val", "")
+
 try:
     dt_prod = datetime.strptime(dt_prod_raw.strip(),
                                 "%d-%m-%y") if dt_prod_raw else date.today()
@@ -124,10 +122,21 @@ try:
                                "%d-%m-%y") if dt_val_raw else date.today()
 except ValueError:
     dt_val = date.today()
+try:
+    dt_cong = datetime.strptime(dt_cong_raw.strip(),
+                                "%d-%m-%y") if dt_cong_raw else date.today()
+except ValueError:
+    dt_cong = date.today()
+
+col5, col6 = st.columns(2)
 dt_prod = col3.date_input("Data de Produção",
                           value=dt_prod,
                           key="dt_prod_input")
 dt_val = col4.date_input("Data de Validade", value=dt_val, key="dt_val_input")
+dt_cong = col5.date_input("Data de Cong.", value=dt_cong, key="dt_cong_input")
+dias_val = col6.text_input("Dias Val",
+                           value=dias_val_raw,
+                           key="dias_val_input")
 
 
 # --- FUNCAO BLOCOS DIARIOS ---
@@ -147,7 +156,7 @@ def bloco_dia(dia, registro):
 
 # --- DIAS DA SEMANA ---
 st.markdown("---")
-st.subheader("🗖️ Registos por Dia")
+st.subheader("📆 Registos por Dia")
 dias_semana = [
     "SEGUNDA", "TERCA", "QUARTA", "QUINTA", "SEXTA", "SABADO", "DOMINGO"
 ]
@@ -155,15 +164,17 @@ for dia in dias_semana:
     bloco_dia(dia, registro)
 
 # --- GRAVAR ALTERACOES ---
-if st.session_state.get("gravar") or st.button("📂 Gravar alterações"):
-    st.session_state["gravar"] = False  # limpa flag
-
+if st.button("📂 Gravar alterações"):
     lote_digitado = st.session_state.get("lote_input", "")
     stock_digitado = st.session_state.get("stock_input", "")
     dt_prod_digitado = st.session_state.get("dt_prod_input", date.today())
     dt_val_digitado = st.session_state.get("dt_val_input", date.today())
+    dt_cong_digitado = st.session_state.get("dt_cong_input", date.today())
+    dias_val_digitado = st.session_state.get("dias_val_input", "")
+
     dt_prod_str = dt_prod_digitado.strftime("%d-%m-%y")
     dt_val_str = dt_val_digitado.strftime("%d-%m-%y")
+    dt_cong_str = dt_cong_digitado.strftime("%d-%m-%y")
 
     campos_dias = {}
     for dia in dias_semana:
@@ -178,8 +189,10 @@ if st.session_state.get("gravar") or st.button("📂 Gravar alterações"):
         "ARMAZEM": armazem_escolhido,
         "STOCK": stock_digitado,
         "LOTE": lote_digitado,
-        "DT PRODUÇÃO": dt_prod_str,
-        "DT VALIDADE": dt_val_str,
+        "DT PROD": dt_prod_str,
+        "DT VAL": dt_val_str,
+        "DT CONG": dt_cong_str,
+        "Dias Val": dias_val_digitado,
         "Data / Semana": data_semana
     }
     nova_linha.update(campos_dias)
