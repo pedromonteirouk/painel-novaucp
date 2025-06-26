@@ -44,7 +44,10 @@ data = [dict(zip(headers, row)) for row in rows[1:]]
 
 # --- PRODUTOS E ARMAZEM ---
 produtos = sorted(
-    set(str(item["Produto"]).strip() for item in data if item.get("Produto")))
+    set(
+        str(item.get("Produto", "")).strip() for item in data
+        if item.get("Produto", "").strip()))
+
 produtos_opcoes = ["(Novo Produto)"] + produtos
 col1, col2 = st.columns(2)
 with col1:
