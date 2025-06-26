@@ -85,12 +85,17 @@ if lote_escolhido != "(Novo Lote)":
             registro = item
             break
 
+# Botão de gravar no topo
+if st.button("📂 Gravar dados", key="gravar_topo"):
+    st.session_state["gravar"] = True
+    st.rerun()
+
 valor_a1 = worksheet.acell("AG1").value or ""
 data_semana = st.text_input("🗓️ Data / Semana",
                             value=valor_a1,
                             key="semana_input")
 
-if st.button("💾 Atualizar Data / Semana"):
+if st.button("📂 Atualizar Data / Semana"):
     worksheet.update_acell("AG1", data_semana)
     st.success("✔️ Data / Semana atualizada!")
     st.rerun()
@@ -142,7 +147,7 @@ def bloco_dia(dia, registro):
 
 # --- DIAS DA SEMANA ---
 st.markdown("---")
-st.subheader("📆 Registos por Dia")
+st.subheader("🗖️ Registos por Dia")
 dias_semana = [
     "SEGUNDA", "TERCA", "QUARTA", "QUINTA", "SEXTA", "SABADO", "DOMINGO"
 ]
@@ -150,7 +155,9 @@ for dia in dias_semana:
     bloco_dia(dia, registro)
 
 # --- GRAVAR ALTERACOES ---
-if st.button("💾 Gravar alterações"):
+if st.session_state.get("gravar") or st.button("📂 Gravar alterações"):
+    st.session_state["gravar"] = False  # limpa flag
+
     lote_digitado = st.session_state.get("lote_input", "")
     stock_digitado = st.session_state.get("stock_input", "")
     dt_prod_digitado = st.session_state.get("dt_prod_input", date.today())
