@@ -42,12 +42,25 @@ rows = worksheet.get_all_values()
 headers = rows[0]
 data = [dict(zip(headers, row)) for row in rows[1:]]
 
+
+# --- FUNCAO CONVERSAO DE DATA ---
+def tentar_converter_data(valor):
+    formatos = ["%d-%m-%y", "%d-%m-%Y", "%Y-%m-%d", "%Y/%m/%d", "%d/%m/%Y"]
+    for fmt in formatos:
+        try:
+            return datetime.strptime(valor.strip(), fmt)
+        except:
+            continue
+    return date.today()
+
+
 # --- PRODUTOS E ARMAZEM ---
 produtos = sorted(
     set(
         str(item.get("Produto", "")).strip() for item in data
         if item.get("Produto", "").strip()))
 produtos_opcoes = ["(Novo Produto)"] + produtos
+
 col1, col2 = st.columns(2)
 with col1:
     produto_escolhido = st.selectbox("🧊 Produto", produtos_opcoes)
@@ -84,19 +97,17 @@ if lote_escolhido != "(Novo Lote)":
             registro = item
             break
 
-valor_a1 = worksheet.acell("AG1").value or ""
+valor_ag1 = worksheet.acell("AG1").value or ""
 data_semana = st.text_input("🗓️ Data / Semana",
-                            value=valor_a1,
+                            value=valor_ag1,
                             key="semana_input")
-
 if st.button("📂 Atualizar Data / Semana"):
     worksheet.update_acell("AG1", data_semana)
     st.success("✔️ Data / Semana atualizada!")
     st.rerun()
 
-st.markdown("---")
-
 # --- DADOS DO LOTE ---
+st.markdown("---")
 st.subheader("📋 Dados do Lote")
 col1, col2, col3, col4 = st.columns(4)
 stock = col1.text_input("Stock",
@@ -105,43 +116,35 @@ stock = col1.text_input("Stock",
 lote = col2.text_input("Lote",
                        value=str(registro.get("LOTE", "")),
                        key="lote_input")
-
-# Datas
-dt_prod_raw = registro.get("DT PROD", "")
-dt_val_raw = registro.get("DT VAL", "")
-dt_cong_raw = registro.get("DT CONG", "")
-dias_val_raw = registro.get("Dias Val", "")
-
-try:
-    dt_prod = datetime.strptime(dt_prod_raw.strip(),
-                                "%d-%m-%y") if dt_prod_raw else date.today()
-except ValueError:
-    dt_prod = date.today()
-try:
-    dt_val = datetime.strptime(dt_val_raw.strip(),
-                               "%d-%m-%y") if dt_val_raw else date.today()
-except ValueError:
-    dt_val = date.today()
-try:
-    dt_cong = datetime.strptime(dt_cong_raw.strip(),
-                                "%d-%m-%y") if dt_cong_raw else date.today()
-except ValueError:
-    dt_cong = date.today()
-
-col5, col6 = st.columns(2)
 dt_prod = col3.date_input("Data de Produção",
-                          value=dt_prod,
+                          value=tentar_converter_data(
+                              registro.get("DT PRODUÇÃO", "")),
                           key="dt_prod_input")
-dt_val = col4.date_input("Data de Validade", value=dt_val, key="dt_val_input")
-dt_cong = col5.date_input("Data de Cong.", value=dt_cong, key="dt_cong_input")
-dias_val = col6.text_input("Dias Val",
-                           value=dias_val_raw,
-                           key="dias_val_input")
+dt_val = col4.date_input("Data de Validade",
+                         value=tentar_converter_data(
+                             registro.get("DT VALIDADE", "")),
+                         key="dt_val_input")
+col5, col6 = st.columns(2)
+dt_cong = col5.date_input("Data de Cong.",
+                          value=tentar_converter_data(
+                              registro.get("DT CONG", "")),
+                          key="dt_cong_input")
+try:
+    dias_val = int(registro.get("Dias Val", ""))
+except:
+    dias_val = ""
+dias_val_str = col6.text_input("Dias Val", value=str(dias_val))
+
+# --- DIAS DA SEMANA ---
+dias_semana = [
+    "SEGUNDA", "TERCA", "QUARTA", "QUINTA", "SEXTA", "SABADO", "DOMINGO"
+]
+st.markdown("---")
+st.subheader("📆 Registos por Dia")
 
 
-# --- FUNCAO BLOCOS DIARIOS ---
 def bloco_dia(dia, registro):
-    with st.expander(f"{dia.capitalize()}" if dia != "DOMINGO" else "Domingo"):
+    with st.expander(dia.capitalize()):
         col1, col2, col3 = st.columns(3)
         col1.text_input(f"{dia} - INÍCIO",
                         value=registro.get(f"{dia} - INÍCIO", ""),
@@ -154,48 +157,40 @@ def bloco_dia(dia, registro):
                         key=f"{dia}_fim")
 
 
-# --- DIAS DA SEMANA ---
-st.markdown("---")
-st.subheader("📆 Registos por Dia")
-dias_semana = [
-    "SEGUNDA", "TERCA", "QUARTA", "QUINTA", "SEXTA", "SABADO", "DOMINGO"
-]
 for dia in dias_semana:
     bloco_dia(dia, registro)
 
 # --- GRAVAR ALTERACOES ---
 if st.button("📂 Gravar alterações"):
-    lote_digitado = st.session_state.get("lote_input", "")
-    stock_digitado = st.session_state.get("stock_input", "")
-    dt_prod_digitado = st.session_state.get("dt_prod_input", date.today())
-    dt_val_digitado = st.session_state.get("dt_val_input", date.today())
-    dt_cong_digitado = st.session_state.get("dt_cong_input", date.today())
-    dias_val_digitado = st.session_state.get("dias_val_input", "")
-
-    dt_prod_str = dt_prod_digitado.strftime("%d-%m-%y")
-    dt_val_str = dt_val_digitado.strftime("%d-%m-%y")
-    dt_cong_str = dt_cong_digitado.strftime("%d-%m-%y")
-
-    campos_dias = {}
-    for dia in dias_semana:
-        campos_dias[f"{dia} - INÍCIO"] = st.session_state.get(
-            f"{dia}_inicio", "")
-        campos_dias[f"{dia} - ENTRADA"] = st.session_state.get(
-            f"{dia}_entrada", "")
-        campos_dias[f"{dia} - FIM"] = st.session_state.get(f"{dia}_fim", "")
-
     nova_linha = {
-        "Produto": produto_novo,
-        "ARMAZEM": armazem_escolhido,
-        "STOCK": stock_digitado,
-        "LOTE": lote_digitado,
-        "DT PROD": dt_prod_str,
-        "DT VAL": dt_val_str,
-        "DT CONG": dt_cong_str,
-        "Dias Val": dias_val_digitado,
-        "Data / Semana": data_semana
+        "Produto":
+        produto_novo,
+        "ARMAZEM":
+        armazem_escolhido,
+        "STOCK":
+        st.session_state.get("stock_input", ""),
+        "LOTE":
+        st.session_state.get("lote_input", ""),
+        "DT PRODUÇÃO":
+        st.session_state.get("dt_prod_input",
+                             date.today()).strftime("%d-%m-%y"),
+        "DT VALIDADE":
+        st.session_state.get("dt_val_input",
+                             date.today()).strftime("%d-%m-%y"),
+        "DT CONG":
+        st.session_state.get("dt_cong_input",
+                             date.today()).strftime("%d-%m-%y"),
+        "Dias Val":
+        dias_val_str,
+        "Data / Semana":
+        data_semana
     }
-    nova_linha.update(campos_dias)
+    for dia in dias_semana:
+        nova_linha[f"{dia} - INÍCIO"] = st.session_state.get(
+            f"{dia}_inicio", "")
+        nova_linha[f"{dia} - ENTRADA"] = st.session_state.get(
+            f"{dia}_entrada", "")
+        nova_linha[f"{dia} - FIM"] = st.session_state.get(f"{dia}_fim", "")
 
     todas_colunas = worksheet.row_values(1)
     valores_para_inserir = [nova_linha.get(col, "") for col in todas_colunas]
