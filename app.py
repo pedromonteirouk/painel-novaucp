@@ -42,28 +42,15 @@ rows = worksheet.get_all_values()
 headers = rows[0]
 data = [dict(zip(headers, row)) for row in rows[1:]]
 
-
-# --- FUNCAO CONVERSAO DE DATA ---
-def tentar_converter_data(valor):
-    formatos = ["%d-%m-%y", "%d-%m-%Y", "%Y-%m-%d", "%Y/%m/%d", "%d/%m/%Y"]
-    for fmt in formatos:
-        try:
-            return datetime.strptime(valor.strip(), fmt)
-        except:
-            continue
-    return date.today()
-
-
 # --- PRODUTOS E ARMAZEM ---
 produtos = sorted(
     set(
         str(item.get("Produto", "")).strip() for item in data
         if item.get("Produto", "").strip()))
 produtos_opcoes = ["(Novo Produto)"] + produtos
-
 col1, col2 = st.columns(2)
 with col1:
-    produto_escolhido = st.selectbox("🧊 Produto", produtos_opcoes)
+    produto_escolhido = st.selectbox("🦨 Produto", produtos_opcoes)
     if produto_escolhido == "(Novo Produto)":
         produto_novo = st.text_input("✏️ Novo produto:", key="produto_input")
     else:
@@ -106,45 +93,48 @@ if st.button("📂 Atualizar Data / Semana"):
     st.success("✔️ Data / Semana atualizada!")
     st.rerun()
 
-# --- DADOS DO LOTE ---
 st.markdown("---")
+
+
+# --- FUNCAO PARSE DATAS ---
+def parse_date_safe(raw):
+    for fmt in ("%d-%m-%y", "%Y-%m-%d", "%d/%m/%Y", "%Y/%m/%d"):
+        try:
+            return datetime.strptime(raw.strip(), fmt).date()
+        except:
+            continue
+    return None
+
+
+# --- DADOS DO LOTE ---
 st.subheader("📋 Dados do Lote")
 col1, col2, col3, col4 = st.columns(4)
+
 stock = col1.text_input("Stock",
                         value=str(registro.get("STOCK", "")),
                         key="stock_input")
 lote = col2.text_input("Lote",
                        value=str(registro.get("LOTE", "")),
                        key="lote_input")
-dt_prod = col3.date_input("Data de Produção",
-                          value=tentar_converter_data(
-                              registro.get("DT PRODUÇÃO", "")),
-                          key="dt_prod_input")
-dt_val = col4.date_input("Data de Validade",
-                         value=tentar_converter_data(
-                             registro.get("DT VALIDADE", "")),
-                         key="dt_val_input")
-col5, col6 = st.columns(2)
-dt_cong = col5.date_input("Data de Cong.",
-                          value=tentar_converter_data(
-                              registro.get("DT CONG", "")),
-                          key="dt_cong_input")
+
+# Datas e parsing robusto
+dt_prod = parse_date_safe(registro.get("DT PRODUÇÃO", "")) or date.today()
+dt_val = parse_date_safe(registro.get("DT VALIDADE", "")) or date.today()
+dt_cong = parse_date_safe(registro.get("DT CONGELAÇÃO", "")) or date.today()
 try:
     dias_val = int(registro.get("Dias Val", ""))
 except:
     dias_val = ""
-dias_val_str = col6.text_input("Dias Val", value=str(dias_val))
 
-# --- DIAS DA SEMANA ---
-dias_semana = [
-    "SEGUNDA", "TERCA", "QUARTA", "QUINTA", "SEXTA", "SABADO", "DOMINGO"
-]
-st.markdown("---")
-st.subheader("📆 Registos por Dia")
+col3.date_input("Data de Produção", value=dt_prod, key="dt_prod_input")
+col4.date_input("Data de Validade", value=dt_val, key="dt_val_input")
+col1.date_input("Data de Cong.", value=dt_cong, key="dt_cong_input")
+col2.text_input("Dias Val", value=str(dias_val), key="dias_val_input")
 
 
+# --- FUNCAO BLOCOS DIARIOS ---
 def bloco_dia(dia, registro):
-    with st.expander(dia.capitalize()):
+    with st.expander(f"{dia.capitalize()}" if dia != "DOMINGO" else "Domingo"):
         col1, col2, col3 = st.columns(3)
         col1.text_input(f"{dia} - INÍCIO",
                         value=registro.get(f"{dia} - INÍCIO", ""),
@@ -157,33 +147,29 @@ def bloco_dia(dia, registro):
                         key=f"{dia}_fim")
 
 
+st.markdown("---")
+st.subheader("🗖️ Registos por Dia")
+dias_semana = [
+    "SEGUNDA", "TERCA", "QUARTA", "QUINTA", "SEXTA", "SABADO", "DOMINGO"
+]
 for dia in dias_semana:
     bloco_dia(dia, registro)
 
 # --- GRAVAR ALTERACOES ---
 if st.button("📂 Gravar alterações"):
     nova_linha = {
-        "Produto":
-        produto_novo,
-        "ARMAZEM":
-        armazem_escolhido,
-        "STOCK":
-        st.session_state.get("stock_input", ""),
-        "LOTE":
-        st.session_state.get("lote_input", ""),
+        "Produto": produto_novo,
+        "ARMAZEM": armazem_escolhido,
+        "STOCK": st.session_state.get("stock_input", ""),
+        "LOTE": st.session_state.get("lote_input", ""),
         "DT PRODUÇÃO":
-        st.session_state.get("dt_prod_input",
-                             date.today()).strftime("%d-%m-%y"),
+        st.session_state.get("dt_prod_input").strftime("%d-%m-%y"),
         "DT VALIDADE":
-        st.session_state.get("dt_val_input",
-                             date.today()).strftime("%d-%m-%y"),
-        "DT CONG":
-        st.session_state.get("dt_cong_input",
-                             date.today()).strftime("%d-%m-%y"),
-        "Dias Val":
-        dias_val_str,
-        "Data / Semana":
-        data_semana
+        st.session_state.get("dt_val_input").strftime("%d-%m-%y"),
+        "DT CONGELAÇÃO":
+        st.session_state.get("dt_cong_input").strftime("%d-%m-%y"),
+        "Dias Val": st.session_state.get("dias_val_input", ""),
+        "Data / Semana": data_semana
     }
     for dia in dias_semana:
         nova_linha[f"{dia} - INÍCIO"] = st.session_state.get(
