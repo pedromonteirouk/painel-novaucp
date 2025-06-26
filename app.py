@@ -65,8 +65,8 @@ with col2:
     armazem_escolhido = st.selectbox("🏢 Armazém", armazens)
 
 registros_produto = [
-    item for item in data if item["Produto"].strip() == produto_novo
-    and item["ARMAZEM"].strip() == armazem_escolhido.strip()
+    item for item in data if item.get("Produto", "").strip() == produto_novo
+    and item.get("ARMAZEM", "").strip() == armazem_escolhido.strip()
 ]
 lotes_existentes = list(
     set(item["LOTE"] for item in registros_produto if item.get("LOTE")))
