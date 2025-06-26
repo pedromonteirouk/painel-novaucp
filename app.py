@@ -48,9 +48,10 @@ produtos = sorted(
         str(item.get("Produto", "")).strip() for item in data
         if item.get("Produto", "").strip()))
 produtos_opcoes = ["(Novo Produto)"] + produtos
+
 col1, col2 = st.columns(2)
 with col1:
-    produto_escolhido = st.selectbox("🫓 Produto", produtos_opcoes)
+    produto_escolhido = st.selectbox("🫒 Produto", produtos_opcoes)
     if produto_escolhido == "(Novo Produto)":
         produto_novo = st.text_input("✏️ Novo produto:", key="produto_input")
     else:
@@ -84,11 +85,11 @@ if lote_escolhido != "(Novo Lote)":
             registro = item
             break
 
-# --- SEMANA ---
-valor_ag1 = worksheet.acell("AG1").value or ""
+valor_a1 = worksheet.acell("AG1").value or ""
 data_semana = st.text_input("🗓️ Data / Semana",
-                            value=valor_ag1,
+                            value=valor_a1,
                             key="semana_input")
+
 if st.button("📂 Atualizar Data / Semana"):
     worksheet.update_acell("AG1", data_semana)
     st.success("✔️ Data / Semana atualizada!")
@@ -96,40 +97,50 @@ if st.button("📂 Atualizar Data / Semana"):
 
 st.markdown("---")
 
+# --- DADOS DO LOTE ---
+st.subheader("📋 Dados do Lote")
+col1, col2, col3, col4 = st.columns(4)
+stock = col1.text_input("Stock",
+                        value=registro.get("STOCK", ""),
+                        key="stock_input")
+lote = col2.text_input("Lote",
+                       value=registro.get("LOTE", ""),
+                       key="lote_input")
 
-# --- PARSE DATES ---
-def parse_data(data_str):
-    formatos = ["%d-%m-%y", "%Y/%m/%d", "%d/%m/%Y", "%Y-%m-%d"]
-    for fmt in formatos:
+
+def obter_data(data_str):
+    for fmt in ["%d-%m-%y", "%d-%m-%Y"]:
         try:
-            return datetime.strptime(data_str.strip(), fmt).date()
+            return datetime.strptime(data_str.strip(), fmt)
         except:
             continue
     return None
 
 
-# --- DADOS DO LOTE ---
-st.subheader("📋 Dados do Lote")
-col1, col2, col3, col4 = st.columns(4)
-stock = col1.text_input("Stock",
-                        value=str(registro.get("STOCK", "")),
-                        key="stock_input")
-lote = col2.text_input("Lote",
-                       value=str(registro.get("LOTE", "")),
-                       key="lote_input")
+def parse_data_para_input(valor):
+    if valor:
+        dt = obter_data(valor)
+        if dt:
+            return dt.date()
+    return date(2000, 1, 1)
 
-# datas
-dt_prod = parse_data(registro.get("DT PRODUÇÃO", "")) or date(2000, 1, 1)
-dt_val = parse_data(registro.get("DT VALIDADE", "")) or date(2000, 1, 1)
-dt_cong = parse_data(registro.get("DT CONG", ""))
-dias_val_raw = registro.get("Dias Val", "")
 
-col3.date_input("Data de Produção", value=dt_prod, key="dt_prod_input")
-col4.date_input("Data de Validade", value=dt_val, key="dt_val_input")
-col1.text_input("Data de Cong.",
-                value=dt_cong.strftime("%Y/%m/%d") if dt_cong else "",
-                key="dt_cong_input")
-col2.text_input("Dias Val", value=dias_val_raw, key="dias_val_input")
+dt_prod = col3.date_input("Data de Produção",
+                          value=parse_data_para_input(
+                              registro.get("DT PROD", "")),
+                          key="dt_prod_input")
+dt_val = col4.date_input("Data de Validade",
+                         value=parse_data_para_input(registro.get(
+                             "DT VAL", "")),
+                         key="dt_val_input")
+col5, col6 = st.columns(2)
+dt_cong = col5.date_input("Data de Cong.",
+                          value=parse_data_para_input(
+                              registro.get("DT CONG", "")),
+                          key="dt_cong_input")
+dias_val = col6.text_input("Dias Val",
+                           value=registro.get("Dias Val", ""),
+                           key="dias_val_input")
 
 
 # --- FUNCAO BLOCOS DIARIOS ---
@@ -147,9 +158,8 @@ def bloco_dia(dia, registro):
                         key=f"{dia}_fim")
 
 
-# --- DIAS DA SEMANA ---
 st.markdown("---")
-st.subheader("🗖️ Registos por Dia")
+st.subheader("📆 Registos por Dia")
 dias_semana = [
     "SEGUNDA", "TERCA", "QUARTA", "QUINTA", "SEXTA", "SABADO", "DOMINGO"
 ]
@@ -158,35 +168,36 @@ for dia in dias_semana:
 
 # --- GRAVAR ALTERACOES ---
 if st.button("📂 Gravar alterações"):
-    lote_digitado = st.session_state.get("lote_input", "")
-    stock_digitado = st.session_state.get("stock_input", "")
-    dt_prod_digitado = st.session_state.get("dt_prod_input", date.today())
-    dt_val_digitado = st.session_state.get("dt_val_input", date.today())
-    dt_cong_digitado = st.session_state.get("dt_cong_input", "")
-    dias_val_digitado = st.session_state.get("dias_val_input", "")
-    dt_prod_str = dt_prod_digitado.strftime("%d-%m-%y")
-    dt_val_str = dt_val_digitado.strftime("%d-%m-%y")
-
-    campos_dias = {}
-    for dia in dias_semana:
-        campos_dias[f"{dia} - INÍCIO"] = st.session_state.get(
-            f"{dia}_inicio", "")
-        campos_dias[f"{dia} - ENTRADA"] = st.session_state.get(
-            f"{dia}_entrada", "")
-        campos_dias[f"{dia} - FIM"] = st.session_state.get(f"{dia}_fim", "")
-
     nova_linha = {
-        "Produto": produto_novo,
-        "ARMAZEM": armazem_escolhido,
-        "STOCK": stock_digitado,
-        "LOTE": lote_digitado,
-        "DT PRODUÇÃO": dt_prod_str,
-        "DT VALIDADE": dt_val_str,
-        "DT CONG": dt_cong_digitado,
-        "Dias Val": dias_val_digitado,
-        "Data / Semana": data_semana
+        "Produto":
+        produto_novo,
+        "ARMAZEM":
+        armazem_escolhido,
+        "STOCK":
+        st.session_state.get("stock_input", ""),
+        "LOTE":
+        st.session_state.get("lote_input", ""),
+        "DT PROD":
+        st.session_state.get("dt_prod_input",
+                             date.today()).strftime("%d-%m-%y"),
+        "DT VAL":
+        st.session_state.get("dt_val_input",
+                             date.today()).strftime("%d-%m-%y"),
+        "DT CONG":
+        st.session_state.get("dt_cong_input",
+                             date.today()).strftime("%d-%m-%y"),
+        "Dias Val":
+        st.session_state.get("dias_val_input", ""),
+        "Data / Semana":
+        data_semana
     }
-    nova_linha.update(campos_dias)
+
+    for dia in dias_semana:
+        nova_linha[f"{dia} - INÍCIO"] = st.session_state.get(
+            f"{dia}_inicio", "")
+        nova_linha[f"{dia} - ENTRADA"] = st.session_state.get(
+            f"{dia}_entrada", "")
+        nova_linha[f"{dia} - FIM"] = st.session_state.get(f"{dia}_fim", "")
 
     todas_colunas = worksheet.row_values(1)
     valores_para_inserir = [nova_linha.get(col, "") for col in todas_colunas]
