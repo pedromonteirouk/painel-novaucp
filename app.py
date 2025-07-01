@@ -4,10 +4,10 @@ from datetime import datetime, date
 from oauth2client.service_account import ServiceAccountCredentials
 import os, json, base64
 
-# --- CONFIGURACAO INICIAL ---
-st.set_page_config(page_title="Painel de Produção - UCP", layout="wide")
-
+# ===== CONFIGURACAO INICIAL =====
+st.set_page_config(page_title="Painel Multi-Páginas", layout="wide")
 PIN_CORRETO = "9472"
+
 if "acesso_autorizado" not in st.session_state:
     st.session_state.acesso_autorizado = False
 if "tentou_entrar" not in st.session_state:
@@ -25,7 +25,25 @@ if not st.session_state.acesso_autorizado:
         st.error("❌ Código incorreto. Tenta novamente.")
     st.stop()
 
-# --- CREDENCIAIS GOOGLE SHEETS ---
+# ===== SELECAO DE PAGINA =====
+col1, col2, col3, col4 = st.columns(4)
+with col1:
+    if st.button("NOVAUCP"):
+        st.session_state.pagina = "NOVAUCP"
+with col2:
+    if st.button("CONGELADOS"):
+        st.session_state.pagina = "CONGELADOS"
+with col3:
+    if st.button("MOLHOS"):
+        st.session_state.pagina = "MOLHOS"
+with col4:
+    if st.button("PIC"):
+        st.session_state.pagina = "PIC"
+
+pagina_atual = st.session_state.get("pagina", "NOVAUCP")
+st.title(f"📊 Painel de Produção – {pagina_atual}")
+
+# ===== CREDENCIAIS GOOGLE SHEETS =====
 scope = [
     "https://spreadsheets.google.com/feeds",
     "https://www.googleapis.com/auth/drive"
@@ -37,12 +55,12 @@ client = gspread.authorize(creds)
 sheet = client.open_by_url(
     "https://docs.google.com/spreadsheets/d/1-J2mqcgSaq3-2CFVwXHzOvUGvKdYr31v7UT8da3r_OU/edit"
 )
-worksheet = sheet.worksheet("NOVAUCP")
+worksheet = sheet.worksheet(pagina_atual)
 rows = worksheet.get_all_values()
 headers = rows[0]
 data = [dict(zip(headers, row)) for row in rows[1:]]
 
-# --- PRODUTOS E ARMAZEM ---
+# ===== PRODUTOS E ARMAZEM =====
 produtos = sorted(
     set(
         str(item.get("Produto", "")).strip() for item in data
@@ -52,19 +70,15 @@ produtos_opcoes = ["(Novo Produto)"] + produtos
 col1, col2 = st.columns(2)
 with col1:
     produto_escolhido = st.selectbox("🫒 Produto", produtos_opcoes)
-    if produto_escolhido == "(Novo Produto)":
-        produto_novo = st.text_input("✏️ Novo produto:", key="produto_input")
-    else:
-        produto_novo = produto_escolhido
+    produto_novo = st.text_input(
+        "✏️ Novo produto:", key="produto_input"
+    ) if produto_escolhido == "(Novo Produto)" else produto_escolhido
 
 ARMAZENS_FIXOS = ["UCP", "MAIORCA", "CLOUD"]
 with col2:
-    if produto_escolhido == "(Novo Produto)":
-        armazens = ARMAZENS_FIXOS
-    else:
-        armazens = sorted(
-            set(item["ARMAZEM"] for item in data
-                if item["Produto"] == produto_escolhido))
+    armazens = ARMAZENS_FIXOS if produto_escolhido == "(Novo Produto)" else sorted(
+        set(item["ARMAZEM"] for item in data
+            if item["Produto"] == produto_escolhido))
     armazem_escolhido = st.selectbox("🏢 Armazém", armazens)
 
 registros_produto = [
@@ -89,7 +103,6 @@ valor_a1 = worksheet.acell("AG1").value or ""
 data_semana = st.text_input("🗓️ Data / Semana",
                             value=valor_a1,
                             key="semana_input")
-
 if st.button("📂 Atualizar Data / Semana"):
     worksheet.update_acell("AG1", data_semana)
     st.success("✔️ Data / Semana atualizada!")
@@ -97,7 +110,7 @@ if st.button("📂 Atualizar Data / Semana"):
 
 st.markdown("---")
 
-# --- DADOS DO LOTE ---
+# ===== DADOS DO LOTE =====
 st.subheader("📋 Dados do Lote")
 col1, col2, col3, col4 = st.columns(4)
 stock = col1.text_input("Stock",
@@ -142,10 +155,13 @@ dias_val = col6.text_input("Dias Val",
                            value=registro.get("Dias Val", ""),
                            key="dias_val_input")
 
-
-# --- FUNCAO BLOCOS DIARIOS ---
-def bloco_dia(dia, registro):
-    with st.expander(f"{dia.capitalize()}" if dia != "DOMINGO" else "Domingo"):
+st.markdown("---")
+st.subheader("📆 Registos por Dia")
+dias_semana = [
+    "SEGUNDA", "TERCA", "QUARTA", "QUINTA", "SEXTA", "SABADO", "DOMINGO"
+]
+for dia in dias_semana:
+    with st.expander(dia.capitalize()):
         col1, col2, col3 = st.columns(3)
         col1.text_input(f"{dia} - INÍCIO",
                         value=registro.get(f"{dia} - INÍCIO", ""),
@@ -157,16 +173,6 @@ def bloco_dia(dia, registro):
                         value=registro.get(f"{dia} - FIM", ""),
                         key=f"{dia}_fim")
 
-
-st.markdown("---")
-st.subheader("📆 Registos por Dia")
-dias_semana = [
-    "SEGUNDA", "TERCA", "QUARTA", "QUINTA", "SEXTA", "SABADO", "DOMINGO"
-]
-for dia in dias_semana:
-    bloco_dia(dia, registro)
-
-# --- GRAVAR ALTERACOES ---
 if st.button("📂 Gravar alterações"):
     nova_linha = {
         "Produto":
@@ -191,7 +197,6 @@ if st.button("📂 Gravar alterações"):
         "Data / Semana":
         data_semana
     }
-
     for dia in dias_semana:
         nova_linha[f"{dia} - INÍCIO"] = st.session_state.get(
             f"{dia}_inicio", "")
