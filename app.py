@@ -233,6 +233,7 @@ if st.button("Gravar alterações"):
         intervalo = f"A{row_to_update}:{ultima_coluna}{row_to_update}"
         worksheet.update(intervalo, [valores_para_inserir])
 
+        # Fórmulas de saldos diários
         worksheet.update_acell(
             f"K{row_to_update}",
             f"=H{row_to_update}+I{row_to_update}-J{row_to_update}")
@@ -248,15 +249,17 @@ if st.button("Gravar alterações"):
         worksheet.update_acell(
             f"W{row_to_update}",
             f"=T{row_to_update}+U{row_to_update}-V{row_to_update}")
+
+        # STOCK = saldo final do domingo (coluna W)
+        worksheet.update_acell(f"X{row_to_update}", f"=W{row_to_update}")
+
+        # Datas separadas das fórmulas de saldo
         worksheet.update_acell(
-            f"Z{row_to_update}",
-            f"=W{row_to_update}+X{row_to_update}-Y{row_to_update}")
-        worksheet.update_acell(f"W{row_to_update}", f"=Z{row_to_update}")
-        worksheet.update_acell(
-            f"Z{row_to_update}",
-            f'=PROCV(A{row_to_update};PARAMETROS!$A$3:$B$301;2;FALSO)+Y{row_to_update}'
-        )
-        worksheet.update_acell(f"AA{row_to_update}", f'=Z{row_to_update}-2')
+            f"Y{row_to_update}",
+            f'=PROCV(A{row_to_update};PARAMETROS!$A$3:$B$301;2;FALSO)+V{row_to_update}'
+        )  # DT VAL
+        worksheet.update_acell(f"Z{row_to_update}",
+                               f'=Y{row_to_update}-2')  # DT CONG
 
         start = time.time()
         timeout = 10
