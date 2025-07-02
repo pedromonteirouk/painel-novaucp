@@ -139,7 +139,6 @@ data_semana = st.text_input("Data / Semana",
 if st.button("Atualizar Data / Semana"):
     worksheet.update_acell("AG1", data_semana)
     st.success("Data / Semana atualizada!")
-    st.rerun()
 
 # ===== DADOS DO LOTE (CARD) =====
 st.markdown('<div class="card"><h3>Dados do Lote</h3>', unsafe_allow_html=True)
@@ -232,7 +231,6 @@ if st.button("Gravar alterações"):
     if lote_escolhido == "(Novo Lote)":
         worksheet.append_row(valores_para_inserir)
         st.success("Novo lote adicionado com sucesso!")
-        st.rerun()
     else:
         todas_linhas = worksheet.get_all_values()
         idx_lote = todas_colunas.index("LOTE")
@@ -260,7 +258,6 @@ if st.button("Gravar alterações"):
             st.success(
                 f"Alterações gravadas e fórmulas restauradas na linha {row_to_update}!"
             )
-            st.rerun()
         else:
             st.error(
                 f"Lote '{lote_escolhido}' não encontrado para atualização.")
