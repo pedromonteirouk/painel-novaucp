@@ -259,11 +259,9 @@ if st.button("Gravar alterações"):
         worksheet.update_acell(f"AA{row_to_update}", f'=Z{row_to_update}-2')
 
         time.sleep(2)  # espera para Sheets recalcular
-        nova_linha_atualizada = worksheet.row_values(row_to_update)
-        registro = dict(zip(todas_colunas, nova_linha_atualizada))
-        stock_calculado = registro.get("STOCK", "0")
+        novo_stock = worksheet.acell(f"W{row_to_update}").value
         st.success(
-            f"Alterações gravadas e STOCK atualizado para {stock_calculado} na linha {row_to_update}!"
+            f"Alterações gravadas e STOCK atualizado para {novo_stock} na linha {row_to_update}!"
         )
     else:
         st.error(f"Lote '{lote_escolhido}' não encontrado para atualização.")
