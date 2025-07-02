@@ -258,8 +258,12 @@ if st.button("Gravar alterações"):
         )
         worksheet.update_acell(f"AA{row_to_update}", f'=Z{row_to_update}-2')
 
-        time.sleep(2)  # espera para Sheets recalcular
-        novo_stock = worksheet.acell(f"W{row_to_update}").value
+        time.sleep(2)  # espera o Google Sheets recalcular
+
+        # Recarrega todos os valores da linha atualizada para atualizar painel
+        nova_linha_atualizada = worksheet.row_values(row_to_update)
+        registro = dict(zip(todas_colunas, nova_linha_atualizada))
+        novo_stock = registro.get("STOCK", "0")
         st.success(
             f"Alterações gravadas e STOCK atualizado para {novo_stock} na linha {row_to_update}!"
         )
