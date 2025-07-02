@@ -218,9 +218,16 @@ if st.button("📂 Gravar alterações"):
             if linha[idx_lote] == lote_escolhido:
                 row_to_update = i
                 break
+
         if row_to_update:
-            worksheet.update(f"A{row_to_update}", [valores_para_inserir])
-            st.success("✔️ Lote atualizado com sucesso!")
+            ultima_coluna = chr(64 + len(valores_para_inserir)) if len(
+                valores_para_inserir) <= 26 else "Z"
+            intervalo = f"A{row_to_update}:{ultima_coluna}{row_to_update}"
+            worksheet.update(intervalo, [valores_para_inserir])
+            st.success(
+                f"✔️ Lote atualizado com sucesso na linha {row_to_update}!")
             st.rerun()
         else:
-            st.error("❌ Lote não encontrado para atualização.")
+            st.error(
+                f"❌ Lote '{lote_escolhido}' não encontrado para atualização. Nenhuma linha alterada."
+            )
