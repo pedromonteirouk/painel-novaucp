@@ -214,7 +214,13 @@ if st.button("📂 Gravar alterações"):
         nova_linha[f"{dia} - FIM"] = st.session_state.get(f"{dia}_fim", "")
 
     todas_colunas = worksheet.row_values(1)
-    valores_para_inserir = [nova_linha.get(col, "") for col in todas_colunas]
+    valores_para_inserir = []
+    for col in todas_colunas:
+        if col == "STOCK":
+            # Preserva a fórmula atual do stock, não sobrescreve
+            valores_para_inserir.append(registro.get("STOCK", ""))
+        else:
+            valores_para_inserir.append(nova_linha.get(col, ""))
 
     if lote_escolhido == "(Novo Lote)":
         worksheet.append_row(valores_para_inserir)
