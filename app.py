@@ -174,6 +174,16 @@ for dia in dias_semana:
                         value=registro.get(f"{dia} - FIM", ""),
                         key=f"{dia}_fim")
 
+
+# ===== FUNCAO PARA CONVERTER NUMERO PARA COLUNA =====
+def numero_para_coluna(n):
+    result = ""
+    while n > 0:
+        n, r = divmod(n - 1, 26)
+        result = chr(65 + r) + result
+    return result
+
+
 if st.button("📂 Gravar alterações"):
     nova_linha = {
         "Produto":
@@ -220,8 +230,7 @@ if st.button("📂 Gravar alterações"):
                 break
 
         if row_to_update:
-            ultima_coluna = chr(64 + len(valores_para_inserir)) if len(
-                valores_para_inserir) <= 26 else "Z"
+            ultima_coluna = numero_para_coluna(len(valores_para_inserir))
             intervalo = f"A{row_to_update}:{ultima_coluna}{row_to_update}"
             worksheet.update(intervalo, [valores_para_inserir])
             st.success(
