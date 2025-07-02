@@ -81,6 +81,18 @@ rows = worksheet.get_all_values()
 headers = rows[0]
 data = [dict(zip(headers, row)) for row in rows[1:]]
 
+
+# ===== FUNCAO ROBUSTA PARA LER DATAS =====
+def parse_data_para_input(valor):
+    if valor and valor.strip():
+        for fmt in ["%d-%m-%y", "%d-%m-%Y", "%Y/%m/%d"]:
+            try:
+                return datetime.strptime(valor.strip(), fmt).date()
+            except ValueError:
+                continue
+    return date(2000, 1, 1)
+
+
 # ===== PRODUTOS E ARMAZEM =====
 produtos = sorted(
     set(
@@ -138,23 +150,18 @@ with col1:
 with col2:
     st.text_input("Lote", value=registro.get("LOTE", ""), key="lote_input")
 with col3:
-    st.date_input(
-        "Data de Produção",
-        value=date(2000, 1, 1) if not registro.get("DT PROD") else
-        datetime.strptime(registro.get("DT PROD"), "%d-%m-%y").date(),
-        key="dt_prod_input")
+    st.date_input("Data de Produção",
+                  value=parse_data_para_input(registro.get("DT PROD", "")),
+                  key="dt_prod_input")
 with col4:
     st.date_input("Data de Validade",
-                  value=date(2000, 1, 1) if not registro.get("DT VAL") else
-                  datetime.strptime(registro.get("DT VAL"), "%d-%m-%y").date(),
+                  value=parse_data_para_input(registro.get("DT VAL", "")),
                   key="dt_val_input")
 col5, col6 = st.columns(2)
 with col5:
-    st.date_input(
-        "Data de Cong.",
-        value=date(2000, 1, 1) if not registro.get("DT CONG") else
-        datetime.strptime(registro.get("DT CONG"), "%d-%m-%y").date(),
-        key="dt_cong_input")
+    st.date_input("Data de Cong.",
+                  value=parse_data_para_input(registro.get("DT CONG", "")),
+                  key="dt_cong_input")
 with col6:
     st.text_input("Dias Val",
                   value=registro.get("Dias Val", ""),
