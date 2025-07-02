@@ -188,6 +188,83 @@ for dia in dias_semana:
                         key=f"{dia}_saida")
 st.markdown('</div>', unsafe_allow_html=True)
 
+
+# ===== BOTAO GRAVAR ALTERACOES =====
+def numero_para_coluna(n):
+    result = ""
+    while n > 0:
+        n, r = divmod(n - 1, 26)
+        result = chr(65 + r) + result
+    return result
+
+
+if st.button("Gravar alterações"):
+    nova_linha = {
+        "Produto":
+        produto_novo,
+        "ARMAZEM":
+        armazem_escolhido,
+        "LOTE":
+        st.session_state.get("lote_input", ""),
+        "DT PROD":
+        st.session_state.get("dt_prod_input",
+                             date.today()).strftime("%d-%m-%y"),
+        "Dias Val":
+        st.session_state.get("dias_val_input", ""),
+        "Data / Semana":
+        data_semana
+    }
+    for dia in dias_semana:
+        nova_linha[f"{dia} - INÍCIO"] = st.session_state.get(
+            f"{dia}_inicio", "")
+        nova_linha[f"{dia} - ENTRADA"] = st.session_state.get(
+            f"{dia}_entrada", "")
+        nova_linha[f"{dia} - FIM"] = st.session_state.get(f"{dia}_saida", "")
+
+    todas_colunas = worksheet.row_values(1)
+    valores_para_inserir = []
+    for col in todas_colunas:
+        if col in ["STOCK", "DT VAL", "DT CONG"]:
+            valores_para_inserir.append(registro.get(col, ""))
+        else:
+            valores_para_inserir.append(nova_linha.get(col, ""))
+
+    if lote_escolhido == "(Novo Lote)":
+        worksheet.append_row(valores_para_inserir)
+        st.success("Novo lote adicionado com sucesso!")
+        st.rerun()
+    else:
+        todas_linhas = worksheet.get_all_values()
+        idx_lote = todas_colunas.index("LOTE")
+        row_to_update = None
+        for i, linha in enumerate(todas_linhas, start=2):
+            if linha[idx_lote] == lote_escolhido:
+                row_to_update = i
+                break
+
+        if row_to_update:
+            ultima_coluna = numero_para_coluna(len(valores_para_inserir))
+            intervalo = f"A{row_to_update}:{ultima_coluna}{row_to_update}"
+            worksheet.update(intervalo, [valores_para_inserir])
+
+            worksheet.update_acell(
+                f"W{row_to_update}",
+                f"=T{row_to_update}+U{row_to_update}-V{row_to_update}")
+            worksheet.update_acell(
+                f"Z{row_to_update}",
+                f'=PROCV(A{row_to_update};PARAMETROS!$A$3:$B$301;2;FALSO)+Y{row_to_update}'
+            )
+            worksheet.update_acell(f"AA{row_to_update}",
+                                   f'=Z{row_to_update}-2')
+
+            st.success(
+                f"Alterações gravadas e fórmulas restauradas na linha {row_to_update}!"
+            )
+            st.rerun()
+        else:
+            st.error(
+                f"Lote '{lote_escolhido}' não encontrado para atualização.")
+
 # ===== GESTAO DE PARAMETROS (CARD ESCONDIDO) =====
 with st.expander("Gestão de Parâmetros"):
     parametros_sheet = sheet.worksheet("PARAMETROS")
