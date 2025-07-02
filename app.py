@@ -195,12 +195,6 @@ if st.button("📂 Gravar alterações"):
         "DT PROD":
         st.session_state.get("dt_prod_input",
                              date.today()).strftime("%d-%m-%y"),
-        "DT VAL":
-        st.session_state.get("dt_val_input",
-                             date.today()).strftime("%d-%m-%y"),
-        "DT CONG":
-        st.session_state.get("dt_cong_input",
-                             date.today()).strftime("%d-%m-%y"),
         "Dias Val":
         st.session_state.get("dias_val_input", ""),
         "Data / Semana":
@@ -216,9 +210,9 @@ if st.button("📂 Gravar alterações"):
     todas_colunas = worksheet.row_values(1)
     valores_para_inserir = []
     for col in todas_colunas:
-        if col == "STOCK":
+        if col in ["STOCK", "DT VAL", "DT CONG"]:
             valores_para_inserir.append(registro.get(
-                "STOCK", ""))  # não sobrescrever fórmula
+                col, ""))  # não sobrescrever fórmulas
         else:
             valores_para_inserir.append(nova_linha.get(col, ""))
 
@@ -240,13 +234,19 @@ if st.button("📂 Gravar alterações"):
             intervalo = f"A{row_to_update}:{ultima_coluna}{row_to_update}"
             worksheet.update(intervalo, [valores_para_inserir])
 
-            # Reaplicar a fórmula do STOCK na coluna W
+            # Reaplicar fórmulas em STOCK, DT VAL e DT CONG
             worksheet.update_acell(
                 f"W{row_to_update}",
                 f"=T{row_to_update}+U{row_to_update}-V{row_to_update}")
+            worksheet.update_acell(
+                f"Z{row_to_update}",
+                f'=PROCV(A{row_to_update};PARAMETROS!$A$3:$B$301;2;FALSO)+Y{row_to_update}'
+            )
+            worksheet.update_acell(f"AA{row_to_update}",
+                                   f'=Z{row_to_update}-2')
 
             st.success(
-                f"✔️ Lote atualizado e fórmula do STOCK restaurada na linha {row_to_update}!"
+                f"✔️ Lote atualizado e fórmulas restauradas na linha {row_to_update}!"
             )
             st.rerun()
         else:
