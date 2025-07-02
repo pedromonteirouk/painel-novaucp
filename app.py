@@ -234,7 +234,6 @@ if st.button("📂 Gravar alterações"):
             intervalo = f"A{row_to_update}:{ultima_coluna}{row_to_update}"
             worksheet.update(intervalo, [valores_para_inserir])
 
-            # Reaplicar fórmulas em STOCK, DT VAL e DT CONG
             worksheet.update_acell(
                 f"W{row_to_update}",
                 f"=T{row_to_update}+U{row_to_update}-V{row_to_update}")
@@ -253,3 +252,25 @@ if st.button("📂 Gravar alterações"):
             st.error(
                 f"❌ Lote '{lote_escolhido}' não encontrado para atualização. Nenhuma linha alterada."
             )
+
+# ===== GESTAO DE PARAMETROS (AREA ESCONDIDA) =====
+with st.expander("⚙️ Gestão de Parâmetros"):
+    parametros_sheet = sheet.worksheet("PARAMETROS")
+    parametros_data = parametros_sheet.get_all_values()
+    parametros_headers = parametros_data[2]  # cabeçalho na linha 3
+    parametros_rows = parametros_data[3:]  # dados desde linha 4
+
+    produtos_param = [linha[0] for linha in parametros_rows if linha[0]]
+    produto_selecionado = st.selectbox("📝 Produto para editar", produtos_param)
+    idx = produtos_param.index(produto_selecionado) + 4  # linha real no sheet
+
+    validade_atual = parametros_sheet.acell(f"B{idx}").value
+    nova_validade = st.number_input("Nova validade (dias)",
+                                    value=int(validade_atual),
+                                    min_value=1)
+
+    if st.button("💾 Atualizar validade"):
+        parametros_sheet.update_acell(f"B{idx}", str(nova_validade))
+        st.success(
+            f"✔️ Validade de '{produto_selecionado}' atualizada para {nova_validade} dias!"
+        )
