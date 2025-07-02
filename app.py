@@ -4,7 +4,6 @@ from datetime import datetime, date
 from oauth2client.service_account import ServiceAccountCredentials
 import os, json, base64
 
-# ===== CONFIGURACAO INICIAL =====
 st.set_page_config(page_title="Painel Produção Minimal", layout="wide")
 
 PIN_CORRETO = "9472"
@@ -25,7 +24,6 @@ if not st.session_state.acesso_autorizado:
         st.error("Código incorreto. Tenta novamente.")
     st.stop()
 
-# ===== CSS PARA ESTILO =====
 st.markdown("""
 <style>
 html, body, [class*="css"] { font-size: 14px !important; }
@@ -46,7 +44,6 @@ h3 { margin-bottom: 1rem; }
 """,
             unsafe_allow_html=True)
 
-# ===== SELECAO DE PAGINA =====
 col1, col2, col3, col4 = st.columns(4)
 with col1:
     if st.button("NOVAUCP"):
@@ -64,7 +61,6 @@ with col4:
 pagina_atual = st.session_state.get("pagina", "NOVAUCP")
 st.title(f"Painel de Produção – {pagina_atual}")
 
-# ===== CREDENCIAIS GOOGLE SHEETS =====
 scope = [
     "https://spreadsheets.google.com/feeds",
     "https://www.googleapis.com/auth/drive"
@@ -82,7 +78,6 @@ headers = rows[0]
 data = [dict(zip(headers, row)) for row in rows[1:]]
 
 
-# ===== FUNCAO ROBUSTA PARA LER DATAS =====
 def parse_data_para_input(valor):
     if valor and valor.strip():
         for fmt in ["%d-%m-%y", "%d-%m-%Y", "%Y/%m/%d"]:
@@ -93,7 +88,6 @@ def parse_data_para_input(valor):
     return date(2000, 1, 1)
 
 
-# ===== PRODUTOS E ARMAZEM =====
 produtos = sorted(
     set(
         str(item.get("Produto", "")).strip() for item in data
@@ -140,7 +134,6 @@ if st.button("Atualizar Data / Semana"):
     worksheet.update_acell("AG1", data_semana)
     st.success("Data / Semana atualizada!")
 
-# ===== DADOS DO LOTE (CARD) =====
 st.markdown('<div class="card"><h3>Dados do Lote</h3>', unsafe_allow_html=True)
 stock_calculado = registro.get("STOCK", "0")
 col1, col2, col3, col4 = st.columns(4)
@@ -167,7 +160,6 @@ with col6:
                   key="dias_val_input")
 st.markdown('</div>', unsafe_allow_html=True)
 
-# ===== REGISTOS POR DIA (CARD) =====
 st.markdown('<div class="card"><h3>Registos por Dia</h3>',
             unsafe_allow_html=True)
 dias_semana = [
@@ -188,7 +180,6 @@ for dia in dias_semana:
 st.markdown('</div>', unsafe_allow_html=True)
 
 
-# ===== BOTAO GRAVAR ALTERACOES =====
 def numero_para_coluna(n):
     result = ""
     while n > 0:
@@ -255,21 +246,30 @@ if st.button("Gravar alterações"):
             worksheet.update_acell(f"AA{row_to_update}",
                                    f'=Z{row_to_update}-2')
 
+            col_inicios = ["H", "K", "N", "Q", "T", "W", "Z"]  # para SEG-DOM
+            for col in col_inicios:
+                worksheet.update_acell(
+                    f"{col}{row_to_update}",
+                    f"={col}{row_to_update}+{chr(ord(col)+1)}{row_to_update}-{chr(ord(col)+2)}{row_to_update}"
+                )
+
+            nova_linha_atualizada = worksheet.row_values(row_to_update)
+            registro = dict(zip(todas_colunas, nova_linha_atualizada))
+            stock_calculado = registro.get("STOCK", "0")
             st.success(
-                f"Alterações gravadas e fórmulas restauradas na linha {row_to_update}!"
+                f"Alterações gravadas e STOCK atualizado para {stock_calculado} na linha {row_to_update}!"
             )
         else:
             st.error(
                 f"Lote '{lote_escolhido}' não encontrado para atualização.")
 
-# ===== GESTAO DE PARAMETROS (CARD ESCONDIDO) =====
 with st.expander("Gestão de Parâmetros"):
     parametros_sheet = sheet.worksheet("PARAMETROS")
     parametros_data = parametros_sheet.get_all_values()
-    parametros_rows = parametros_data[3:]  # dados desde linha 4
+    parametros_rows = parametros_data[3:]
     produtos_param = [linha[0] for linha in parametros_rows if linha[0]]
     produto_selecionado = st.selectbox("Produto para editar", produtos_param)
-    idx = produtos_param.index(produto_selecionado) + 4  # linha real no sheet
+    idx = produtos_param.index(produto_selecionado) + 4
     validade_atual = parametros_sheet.acell(f"B{idx}").value
     nova_validade = st.number_input("Nova validade (dias)",
                                     value=int(validade_atual),
