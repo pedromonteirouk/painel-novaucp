@@ -168,6 +168,26 @@ with col6:
                   key="dias_val_input")
 st.markdown('</div>', unsafe_allow_html=True)
 
+# ===== REGISTOS POR DIA (CARD) =====
+st.markdown('<div class="card"><h3>Registos por Dia</h3>',
+            unsafe_allow_html=True)
+dias_semana = [
+    "SEGUNDA", "TERCA", "QUARTA", "QUINTA", "SEXTA", "SABADO", "DOMINGO"
+]
+for dia in dias_semana:
+    with st.expander(dia.capitalize()):
+        col1, col2, col3 = st.columns(3)
+        col1.text_input(f"{dia} - INÍCIO",
+                        value=registro.get(f"{dia} - INÍCIO", ""),
+                        key=f"{dia}_inicio")
+        col2.text_input(f"{dia} - ENTRADA",
+                        value=registro.get(f"{dia} - ENTRADA", ""),
+                        key=f"{dia}_entrada")
+        col3.text_input(f"{dia} - SAIDA",
+                        value=registro.get(f"{dia} - FIM", ""),
+                        key=f"{dia}_saida")
+st.markdown('</div>', unsafe_allow_html=True)
+
 # ===== GESTAO DE PARAMETROS (CARD ESCONDIDO) =====
 with st.expander("Gestão de Parâmetros"):
     parametros_sheet = sheet.worksheet("PARAMETROS")
