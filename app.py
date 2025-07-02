@@ -3,9 +3,8 @@ import gspread
 from datetime import datetime, date
 from oauth2client.service_account import ServiceAccountCredentials
 import os, json, base64
-import time
 
-st.set_page_config(page_title="Painel Produção Minimal", layout="wide")
+st.set_page_config(page_title="Painel Produção - Local Calc", layout="wide")
 
 PIN_CORRETO = "9472"
 if "acesso_autorizado" not in st.session_state:
@@ -25,25 +24,17 @@ if not st.session_state.acesso_autorizado:
         st.error("Código incorreto. Tenta novamente.")
     st.stop()
 
-st.markdown("""
-<style>
-html, body, [class*="css"] { font-size: 14px !important; }
-.block-container { padding: 2rem; }
-.card {
-    background-color: #ffffff;
-    padding: 1rem;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    margin-bottom: 1.5rem;
-    text-align: center;
-}
-h3 { margin-bottom: 1rem; }
-.stTextInput>div>div>input { text-align: center; }
-.stDateInput>div>div>input { text-align: center; }
-.stNumberInput>div>div>input { text-align: center; }
-</style>
-""",
-            unsafe_allow_html=True)
+scope = [
+    "https://spreadsheets.google.com/feeds",
+    "https://www.googleapis.com/auth/drive"
+]
+creds_json = base64.b64decode(os.environ["GOOGLE_CREDS_BASE64"]).decode()
+creds = ServiceAccountCredentials.from_json_keyfile_dict(
+    json.loads(creds_json), scope)
+client = gspread.authorize(creds)
+sheet = client.open_by_url(
+    "https://docs.google.com/spreadsheets/d/1-J2mqcgSaq3-2CFVwXHzOvUGvKdYr31v7UT8da3r_OU/edit"
+)
 
 col1, col2, col3, col4 = st.columns(4)
 with col1:
@@ -60,34 +51,12 @@ with col4:
         st.session_state.pagina = "PIC"
 
 pagina_atual = st.session_state.get("pagina", "NOVAUCP")
-st.title(f"Painel de Produção – {pagina_atual}")
-
-scope = [
-    "https://spreadsheets.google.com/feeds",
-    "https://www.googleapis.com/auth/drive"
-]
-creds_json = base64.b64decode(os.environ["GOOGLE_CREDS_BASE64"]).decode()
-creds = ServiceAccountCredentials.from_json_keyfile_dict(
-    json.loads(creds_json), scope)
-client = gspread.authorize(creds)
-sheet = client.open_by_url(
-    "https://docs.google.com/spreadsheets/d/1-J2mqcgSaq3-2CFVwXHzOvUGvKdYr31v7UT8da3r_OU/edit"
-)
 worksheet = sheet.worksheet(pagina_atual)
 rows = worksheet.get_all_values()
 headers = rows[0]
 data = [dict(zip(headers, row)) for row in rows[1:]]
 
-
-def parse_data_para_input(valor):
-    if valor and valor.strip():
-        for fmt in ["%d-%m-%y", "%d-%m-%Y", "%Y/%m/%d"]:
-            try:
-                return datetime.strptime(valor.strip(), fmt).date()
-            except ValueError:
-                continue
-    return date(2000, 1, 1)
-
+st.title(f"Painel de Produção – {pagina_atual}")
 
 produtos = sorted(
     set(
@@ -127,45 +96,11 @@ if lote_escolhido != "(Novo Lote)":
             registro = item
             break
 
-valor_a1 = worksheet.acell("AG1").value or ""
-data_semana = st.text_input("Data / Semana",
-                            value=valor_a1,
-                            key="semana_input")
-if st.button("Atualizar Data / Semana"):
-    worksheet.update_acell("AG1", data_semana)
-    st.success("Data / Semana atualizada!")
-
-st.markdown('<div class="card"><h3>Dados do Lote</h3>', unsafe_allow_html=True)
-stock_calculado = registro.get("STOCK", "0")
-col1, col2, col3, col4 = st.columns(4)
-with col1:
-    st.metric("Stock calculado", stock_calculado)
-with col2:
-    st.text_input("Lote", value=registro.get("LOTE", ""), key="lote_input")
-with col3:
-    st.date_input("Data de Produção",
-                  value=parse_data_para_input(registro.get("DT PROD", "")),
-                  key="dt_prod_input")
-with col4:
-    st.date_input("Data de Validade",
-                  value=parse_data_para_input(registro.get("DT VAL", "")),
-                  key="dt_val_input")
-col5, col6 = st.columns(2)
-with col5:
-    st.date_input("Data de Cong.",
-                  value=parse_data_para_input(registro.get("DT CONG", "")),
-                  key="dt_cong_input")
-with col6:
-    st.text_input("Dias Val",
-                  value=registro.get("Dias Val", ""),
-                  key="dias_val_input")
-st.markdown('</div>', unsafe_allow_html=True)
-
-st.markdown('<div class="card"><h3>Registos por Dia</h3>',
-            unsafe_allow_html=True)
 dias_semana = [
     "SEGUNDA", "TERCA", "QUARTA", "QUINTA", "SEXTA", "SABADO", "DOMINGO"
 ]
+
+st.subheader("Registos por Dia")
 for dia in dias_semana:
     with st.expander(dia.capitalize()):
         col1, col2, col3 = st.columns(3)
@@ -178,48 +113,9 @@ for dia in dias_semana:
         col3.text_input(f"{dia} - SAIDA",
                         value=registro.get(f"{dia} - FIM", ""),
                         key=f"{dia}_saida")
-st.markdown('</div>', unsafe_allow_html=True)
-
-
-def numero_para_coluna(n):
-    result = ""
-    while n > 0:
-        n, r = divmod(n - 1, 26)
-        result = chr(65 + r) + result
-    return result
-
 
 if st.button("Gravar alterações"):
-    nova_linha = {
-        "Produto":
-        produto_novo,
-        "ARMAZEM":
-        armazem_escolhido,
-        "LOTE":
-        st.session_state.get("lote_input", ""),
-        "DT PROD":
-        st.session_state.get("dt_prod_input",
-                             date.today()).strftime("%d-%m-%y"),
-        "Dias Val":
-        st.session_state.get("dias_val_input", ""),
-        "Data / Semana":
-        data_semana
-    }
-    for dia in dias_semana:
-        nova_linha[f"{dia} - INÍCIO"] = st.session_state.get(
-            f"{dia}_inicio", "")
-        nova_linha[f"{dia} - ENTRADA"] = st.session_state.get(
-            f"{dia}_entrada", "")
-        nova_linha[f"{dia} - FIM"] = st.session_state.get(f"{dia}_saida", "")
-
     todas_colunas = worksheet.row_values(1)
-    valores_para_inserir = []
-    for col in todas_colunas:
-        if col in ["STOCK", "DT VAL", "DT CONG"]:
-            valores_para_inserir.append(registro.get(col, ""))
-        else:
-            valores_para_inserir.append(nova_linha.get(col, ""))
-
     todas_linhas = worksheet.get_all_values()
     idx_lote = todas_colunas.index("LOTE")
     row_to_update = None
@@ -229,49 +125,29 @@ if st.button("Gravar alterações"):
             break
 
     if row_to_update:
-        ultima_coluna = numero_para_coluna(len(valores_para_inserir))
-        intervalo = f"A{row_to_update}:{ultima_coluna}{row_to_update}"
-        worksheet.update(intervalo, [valores_para_inserir])
+        saldo = None
+        for idx, dia in enumerate(dias_semana):
+            inicio = st.session_state.get(f"{dia}_inicio", "").strip()
+            entrada = st.session_state.get(f"{dia}_entrada", "").strip()
+            saida = st.session_state.get(f"{dia}_saida", "").strip()
 
-        worksheet.update_acell(
-            f"K{row_to_update}",
-            f"=H{row_to_update}+I{row_to_update}-J{row_to_update}")
-        worksheet.update_acell(
-            f"N{row_to_update}",
-            f"=K{row_to_update}+L{row_to_update}-M{row_to_update}")
-        worksheet.update_acell(
-            f"Q{row_to_update}",
-            f"=N{row_to_update}+O{row_to_update}-P{row_to_update}")
-        worksheet.update_acell(
-            f"T{row_to_update}",
-            f"=Q{row_to_update}+R{row_to_update}-S{row_to_update}")
-        worksheet.update_acell(
-            f"W{row_to_update}",
-            f"=T{row_to_update}+U{row_to_update}-V{row_to_update}")
-        worksheet.update_acell(
-            f"Z{row_to_update}",
-            f"=W{row_to_update}+X{row_to_update}-Y{row_to_update}")
-        worksheet.update_acell(f"W{row_to_update}", f"=Z{row_to_update}")
-        worksheet.update_acell(
-            f"Z{row_to_update}",
-            f'=PROCV(A{row_to_update};PARAMETROS!$A$3:$B$301;2;FALSO)+Y{row_to_update}'
-        )
-        worksheet.update_acell(f"AA{row_to_update}", f'=Z{row_to_update}-2')
+            # Converte para inteiros ou 0 se vazio
+            inicio = int(inicio) if inicio.isdigit() else 0 if inicio else (
+                saldo if saldo is not None else 0)
+            entrada = int(entrada) if entrada.isdigit() else 0
+            saida = int(saida) if saida.isdigit() else 0
 
-        start = time.time()
-        timeout = 10
-        old_stock = registro.get("STOCK", "0")
+            saldo = inicio + entrada - saida
 
-        while True:
-            novo_stock = worksheet.acell(f"W{row_to_update}").value
-            if novo_stock != old_stock and novo_stock not in ("", None):
-                break
-            if time.time() - start > timeout:
-                break
-            time.sleep(0.5)
+            # Grava valor calculado de Início no Sheets (sem fórmulas)
+            col_inicio = ["H", "K", "N", "Q", "T", "W",
+                          "Z"][idx]  # colunas SEG a DOM
+            worksheet.update_acell(f"{col_inicio}{row_to_update}", saldo)
 
+        # Atualiza STOCK como saldo final
+        worksheet.update_acell(f"W{row_to_update}", saldo)
         st.success(
-            f"Alterações gravadas! STOCK atualizado para {novo_stock} na linha {row_to_update}."
+            f"Alterações gravadas e STOCK atualizado para {saldo} na linha {row_to_update}!"
         )
         st.rerun()
     else:
