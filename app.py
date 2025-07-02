@@ -113,9 +113,10 @@ st.markdown("---")
 # ===== DADOS DO LOTE =====
 st.subheader("📋 Dados do Lote")
 col1, col2, col3, col4 = st.columns(4)
-stock = col1.text_input("Stock",
-                        value=registro.get("STOCK", ""),
-                        key="stock_input")
+
+stock_calculado = registro.get("STOCK", "0")
+col1.info(f"📦 Stock calculado: **{stock_calculado}**")
+
 lote = col2.text_input("Lote",
                        value=registro.get("LOTE", ""),
                        key="lote_input")
@@ -179,8 +180,6 @@ if st.button("📂 Gravar alterações"):
         produto_novo,
         "ARMAZEM":
         armazem_escolhido,
-        "STOCK":
-        st.session_state.get("stock_input", ""),
         "LOTE":
         st.session_state.get("lote_input", ""),
         "DT PROD":
