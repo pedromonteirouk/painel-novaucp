@@ -3,6 +3,7 @@ import gspread
 from datetime import datetime, date
 from oauth2client.service_account import ServiceAccountCredentials
 import os, json, base64
+import time
 
 st.set_page_config(page_title="Painel Produção Minimal", layout="wide")
 
@@ -234,32 +235,30 @@ if st.button("Gravar alterações"):
 
         worksheet.update_acell(
             f"K{row_to_update}",
-            f"=H{row_to_update}+I{row_to_update}-J{row_to_update}")  # TERÇA
+            f"=H{row_to_update}+I{row_to_update}-J{row_to_update}")
         worksheet.update_acell(
             f"N{row_to_update}",
-            f"=K{row_to_update}+L{row_to_update}-M{row_to_update}")  # QUARTA
+            f"=K{row_to_update}+L{row_to_update}-M{row_to_update}")
         worksheet.update_acell(
             f"Q{row_to_update}",
-            f"=N{row_to_update}+O{row_to_update}-P{row_to_update}")  # QUINTA
+            f"=N{row_to_update}+O{row_to_update}-P{row_to_update}")
         worksheet.update_acell(
             f"T{row_to_update}",
-            f"=Q{row_to_update}+R{row_to_update}-S{row_to_update}")  # SEXTA
+            f"=Q{row_to_update}+R{row_to_update}-S{row_to_update}")
         worksheet.update_acell(
             f"W{row_to_update}",
-            f"=T{row_to_update}+U{row_to_update}-V{row_to_update}")  # SÁBADO
+            f"=T{row_to_update}+U{row_to_update}-V{row_to_update}")
         worksheet.update_acell(
             f"Z{row_to_update}",
-            f"=W{row_to_update}+X{row_to_update}-Y{row_to_update}")  # DOMINGO
-
-        worksheet.update_acell(f"W{row_to_update}",
-                               f"=Z{row_to_update}")  # STOCK = saldo domingo
-
+            f"=W{row_to_update}+X{row_to_update}-Y{row_to_update}")
+        worksheet.update_acell(f"W{row_to_update}", f"=Z{row_to_update}")
         worksheet.update_acell(
             f"Z{row_to_update}",
             f'=PROCV(A{row_to_update};PARAMETROS!$A$3:$B$301;2;FALSO)+Y{row_to_update}'
         )
         worksheet.update_acell(f"AA{row_to_update}", f'=Z{row_to_update}-2')
 
+        time.sleep(2)  # espera para Sheets recalcular
         nova_linha_atualizada = worksheet.row_values(row_to_update)
         registro = dict(zip(todas_colunas, nova_linha_atualizada))
         stock_calculado = registro.get("STOCK", "0")
