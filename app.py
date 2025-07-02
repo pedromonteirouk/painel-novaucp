@@ -213,12 +213,9 @@ if st.button("Gravar alterações"):
         nova_linha[f"{dia} - FIM"] = st.session_state.get(f"{dia}_saida", "")
 
     todas_colunas = worksheet.row_values(1)
-    valores_para_inserir = []
-    for col in todas_colunas:
-        if col in ["STOCK", "DT VAL", "DT CONG"]:
-            valores_para_inserir.append(registro.get(col, ""))
-        else:
-            valores_para_inserir.append(nova_linha.get(col, ""))
+    valores_para_inserir = [
+        nova_linha.get(col, registro.get(col, "")) for col in todas_colunas
+    ]
 
     todas_linhas = worksheet.get_all_values()
     idx_lote = todas_colunas.index("LOTE")
@@ -233,7 +230,7 @@ if st.button("Gravar alterações"):
         intervalo = f"A{row_to_update}:{ultima_coluna}{row_to_update}"
         worksheet.update(intervalo, [valores_para_inserir])
 
-        # Fórmulas de saldos diários
+        # Fórmulas dos saldos diários e STOCK em W
         worksheet.update_acell(
             f"K{row_to_update}",
             f"=H{row_to_update}+I{row_to_update}-J{row_to_update}")
@@ -249,9 +246,6 @@ if st.button("Gravar alterações"):
         worksheet.update_acell(
             f"W{row_to_update}",
             f"=T{row_to_update}+U{row_to_update}-V{row_to_update}")
-
-        # STOCK = saldo final do domingo (coluna W)
-        worksheet.update_acell(f"X{row_to_update}", f"=W{row_to_update}")
 
         # Datas separadas das fórmulas de saldo
         worksheet.update_acell(
