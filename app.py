@@ -219,63 +219,52 @@ if st.button("Gravar alterações"):
         else:
             valores_para_inserir.append(nova_linha.get(col, ""))
 
-    if lote_escolhido == "(Novo Lote)":
-        worksheet.append_row(valores_para_inserir)
-        st.success("Novo lote adicionado com sucesso!")
-    else:
-        todas_linhas = worksheet.get_all_values()
-        idx_lote = todas_colunas.index("LOTE")
-        row_to_update = None
-        for i, linha in enumerate(todas_linhas, start=2):
-            if linha[idx_lote] == lote_escolhido:
-                row_to_update = i
-                break
+    todas_linhas = worksheet.get_all_values()
+    idx_lote = todas_colunas.index("LOTE")
+    row_to_update = None
+    for i, linha in enumerate(todas_linhas, start=2):
+        if linha[idx_lote] == lote_escolhido:
+            row_to_update = i
+            break
 
-        if row_to_update:
-            ultima_coluna = numero_para_coluna(len(valores_para_inserir))
-            intervalo = f"A{row_to_update}:{ultima_coluna}{row_to_update}"
-            worksheet.update(intervalo, [valores_para_inserir])
+    if row_to_update:
+        ultima_coluna = numero_para_coluna(len(valores_para_inserir))
+        intervalo = f"A{row_to_update}:{ultima_coluna}{row_to_update}"
+        worksheet.update(intervalo, [valores_para_inserir])
 
-            worksheet.update_acell(
-                f"W{row_to_update}",
-                f"=T{row_to_update}+U{row_to_update}-V{row_to_update}")
-            worksheet.update_acell(
-                f"Z{row_to_update}",
-                f'=PROCV(A{row_to_update};PARAMETROS!$A$3:$B$301;2;FALSO)+Y{row_to_update}'
-            )
-            worksheet.update_acell(f"AA{row_to_update}",
-                                   f'=Z{row_to_update}-2')
+        worksheet.update_acell(
+            f"K{row_to_update}",
+            f"=H{row_to_update}+I{row_to_update}-J{row_to_update}")  # TERÇA
+        worksheet.update_acell(
+            f"N{row_to_update}",
+            f"=K{row_to_update}+L{row_to_update}-M{row_to_update}")  # QUARTA
+        worksheet.update_acell(
+            f"Q{row_to_update}",
+            f"=N{row_to_update}+O{row_to_update}-P{row_to_update}")  # QUINTA
+        worksheet.update_acell(
+            f"T{row_to_update}",
+            f"=Q{row_to_update}+R{row_to_update}-S{row_to_update}")  # SEXTA
+        worksheet.update_acell(
+            f"W{row_to_update}",
+            f"=T{row_to_update}+U{row_to_update}-V{row_to_update}")  # SÁBADO
+        worksheet.update_acell(
+            f"Z{row_to_update}",
+            f"=W{row_to_update}+X{row_to_update}-Y{row_to_update}")  # DOMINGO
 
-            col_inicios = ["H", "K", "N", "Q", "T", "W", "Z"]  # para SEG-DOM
-            for col in col_inicios:
-                worksheet.update_acell(
-                    f"{col}{row_to_update}",
-                    f"={col}{row_to_update}+{chr(ord(col)+1)}{row_to_update}-{chr(ord(col)+2)}{row_to_update}"
-                )
+        worksheet.update_acell(f"W{row_to_update}",
+                               f"=Z{row_to_update}")  # STOCK = saldo domingo
 
-            nova_linha_atualizada = worksheet.row_values(row_to_update)
-            registro = dict(zip(todas_colunas, nova_linha_atualizada))
-            stock_calculado = registro.get("STOCK", "0")
-            st.success(
-                f"Alterações gravadas e STOCK atualizado para {stock_calculado} na linha {row_to_update}!"
-            )
-        else:
-            st.error(
-                f"Lote '{lote_escolhido}' não encontrado para atualização.")
-
-with st.expander("Gestão de Parâmetros"):
-    parametros_sheet = sheet.worksheet("PARAMETROS")
-    parametros_data = parametros_sheet.get_all_values()
-    parametros_rows = parametros_data[3:]
-    produtos_param = [linha[0] for linha in parametros_rows if linha[0]]
-    produto_selecionado = st.selectbox("Produto para editar", produtos_param)
-    idx = produtos_param.index(produto_selecionado) + 4
-    validade_atual = parametros_sheet.acell(f"B{idx}").value
-    nova_validade = st.number_input("Nova validade (dias)",
-                                    value=int(validade_atual),
-                                    min_value=1)
-    if st.button("Atualizar validade"):
-        parametros_sheet.update_acell(f"B{idx}", str(nova_validade))
-        st.success(
-            f"Validade de '{produto_selecionado}' atualizada para {nova_validade} dias!"
+        worksheet.update_acell(
+            f"Z{row_to_update}",
+            f'=PROCV(A{row_to_update};PARAMETROS!$A$3:$B$301;2;FALSO)+Y{row_to_update}'
         )
+        worksheet.update_acell(f"AA{row_to_update}", f'=Z{row_to_update}-2')
+
+        nova_linha_atualizada = worksheet.row_values(row_to_update)
+        registro = dict(zip(todas_colunas, nova_linha_atualizada))
+        stock_calculado = registro.get("STOCK", "0")
+        st.success(
+            f"Alterações gravadas e STOCK atualizado para {stock_calculado} na linha {row_to_update}!"
+        )
+    else:
+        st.error(f"Lote '{lote_escolhido}' não encontrado para atualização.")
