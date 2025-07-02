@@ -258,9 +258,20 @@ if st.button("Gravar alterações"):
         )
         worksheet.update_acell(f"AA{row_to_update}", f'=Z{row_to_update}-2')
 
-        time.sleep(2)  # espera o Google Sheets recalcular
+        start = time.time()
+        timeout = 10
+        old_stock = registro.get("STOCK", "0")
+
+        while True:
+            novo_stock = worksheet.acell(f"W{row_to_update}").value
+            if novo_stock != old_stock and novo_stock not in ("", None):
+                break
+            if time.time() - start > timeout:
+                break
+            time.sleep(0.5)
+
         st.success(
-            f"Alterações gravadas! A página vai atualizar com o STOCK mais recente."
+            f"Alterações gravadas! STOCK atualizado para {novo_stock} na linha {row_to_update}."
         )
         st.rerun()
     else:
