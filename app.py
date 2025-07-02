@@ -217,8 +217,8 @@ if st.button("📂 Gravar alterações"):
     valores_para_inserir = []
     for col in todas_colunas:
         if col == "STOCK":
-            # Preserva a fórmula atual do stock, não sobrescreve
-            valores_para_inserir.append(registro.get("STOCK", ""))
+            valores_para_inserir.append(registro.get(
+                "STOCK", ""))  # não sobrescrever fórmula
         else:
             valores_para_inserir.append(nova_linha.get(col, ""))
 
@@ -239,8 +239,15 @@ if st.button("📂 Gravar alterações"):
             ultima_coluna = numero_para_coluna(len(valores_para_inserir))
             intervalo = f"A{row_to_update}:{ultima_coluna}{row_to_update}"
             worksheet.update(intervalo, [valores_para_inserir])
+
+            # Reaplicar a fórmula do STOCK na coluna W
+            worksheet.update_acell(
+                f"W{row_to_update}",
+                f"=T{row_to_update}+U{row_to_update}-V{row_to_update}")
+
             st.success(
-                f"✔️ Lote atualizado com sucesso na linha {row_to_update}!")
+                f"✔️ Lote atualizado e fórmula do STOCK restaurada na linha {row_to_update}!"
+            )
             st.rerun()
         else:
             st.error(
